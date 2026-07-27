@@ -6,9 +6,9 @@ import {
   MinLength,
 } from 'class-validator';
 
-import { UserRole } from '../../users/enums/user-role.enum';
+import { UserRole } from '../enums/user-role.enum';
 
-export class RegisterDto {
+export class CreateUserDto {
   @IsString()
   @IsNotEmpty()
   name: string;
@@ -16,6 +16,7 @@ export class RegisterDto {
   @IsEmail()
   email: string;
 
+  @IsString()
   @MinLength(8)
   password: string;
 
