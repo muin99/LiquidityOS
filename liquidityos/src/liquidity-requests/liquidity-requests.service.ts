@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateLiquidityRequestDto } from './dto/create-liquidity-request.dto';
 import { LiquidityRequest } from './entities/liquidity-request.entity';
+import { UpdateLiquidityRequestDto } from './dto/update-liquidity-request.dto';
 @Injectable()
 export class LiquidityRequestsService {
   constructor(
@@ -43,7 +44,7 @@ export class LiquidityRequestsService {
     if (!request) throw new NotFoundException('Liquidity request not found');
     return request;
   }
-  async update(id: string, dto: Partial<CreateLiquidityRequestDto>) {
+  async update(id: string, dto: UpdateLiquidityRequestDto) {
     const request = await this.findOne(id);
     if (request.status !== 'open')
       throw new BadRequestException('Only open requests can be updated');

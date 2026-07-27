@@ -14,6 +14,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { UserRole } from '../users/enums/user-role.enum';
 import { AreasService } from './areas.service';
 import { CreateAreaDto } from './dto/create-area.dto';
+import { UpdateAreaDto } from './dto/update-area.dto';
 @Controller('areas')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AreasController {
@@ -29,7 +30,7 @@ export class AreasController {
   }
   @Patch(':id') @Roles(UserRole.ADMIN) update(
     @Param('id') id: string,
-    @Body() dto: Partial<CreateAreaDto>,
+    @Body() dto: UpdateAreaDto,
   ) {
     return this.areas.update(id, dto);
   }

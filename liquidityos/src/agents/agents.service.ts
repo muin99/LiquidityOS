@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { OnboardAgentDto } from './dto/onboard-agent.dto';
 import { Agent } from './entities/agent.entity';
+import { UpdateAgentDto } from './dto/update-agent.dto';
 
 @Injectable()
 export class AgentsService {
@@ -33,7 +34,7 @@ export class AgentsService {
     if (!agent) throw new NotFoundException('Agent not found');
     return agent;
   }
-  async update(id: string, dto: Partial<OnboardAgentDto>) {
+  async update(id: string, dto: UpdateAgentDto) {
     const agent = await this.findOne(id);
     Object.assign(agent, dto);
     return this.agents.save(agent);
