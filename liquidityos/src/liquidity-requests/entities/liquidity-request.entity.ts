@@ -35,6 +35,12 @@ export class LiquidityRequest {
   @Column({ length: 20, default: 'open' })
   status: string;
 
+  @Column({ default: false })
+  allowPartial: boolean;
+
+  @Column({ type: 'text', nullable: true })
+  notes?: string;
+
   @Column({ type: 'timestamp' })
   expiresAt: Date;
 
