@@ -22,9 +22,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 
 @Controller('users')
 export class UsersController {
-  constructor(
-    private readonly usersService: UsersService,
-  ) {}
+  constructor(private readonly usersService: UsersService) {}
 
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -41,11 +39,8 @@ export class UsersController {
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
-  update(
-    @Param('id') id: string,
-    @Body() dto: UpdateUserDto,
-) {
-  return this.usersService.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
+    return this.usersService.update(id, dto);
   }
 
   @Delete(':id')
