@@ -15,6 +15,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { UserRole } from '../users/enums/user-role.enum';
 import { CreateLiquidityOfferDto } from './dto/create-liquidity-offer.dto';
 import { LiquidityOffersService } from './liquidity-offers.service';
+import { UpdateLiquidityOfferDto } from './dto/update-liquidity-offer.dto';
 @Controller('liquidity-offers')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class LiquidityOffersController {
@@ -35,7 +36,7 @@ export class LiquidityOffersController {
   }
   @Patch(':id') @Roles(UserRole.COORDINATOR) update(
     @Param('id') id: string,
-    @Body() dto: Partial<CreateLiquidityOfferDto>,
+    @Body() dto: UpdateLiquidityOfferDto,
   ) {
     return this.offers.update(id, dto);
   }

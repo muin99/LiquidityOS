@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { OnboardCoordinatorDto } from './dto/onboard-coordinator.dto';
 import { LiquidityCoordinator } from './entities/liquidity-coordinator.entity';
+import { UpdateCoordinatorDto } from './dto/update-coordinator.dto';
 @Injectable()
 export class CoordinatorsService {
   constructor(
@@ -32,7 +33,7 @@ export class CoordinatorsService {
     if (!coordinator) throw new NotFoundException('Coordinator not found');
     return coordinator;
   }
-  async update(id: string, dto: Partial<OnboardCoordinatorDto>) {
+  async update(id: string, dto: UpdateCoordinatorDto) {
     const coordinator = await this.findOne(id);
     Object.assign(coordinator, dto);
     return this.coordinators.save(coordinator);

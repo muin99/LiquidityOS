@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateAreaDto } from './dto/create-area.dto';
 import { Area } from './entities/area.entity';
+import { UpdateAreaDto } from './dto/update-area.dto';
 @Injectable()
 export class AreasService {
   constructor(
@@ -29,7 +30,7 @@ export class AreasService {
     if (!area) throw new NotFoundException('Area not found');
     return area;
   }
-  async update(id: string, dto: Partial<CreateAreaDto>) {
+  async update(id: string, dto: UpdateAreaDto) {
     const area = await this.findOne(id);
     Object.assign(area, dto);
     return this.areas.save(area);
