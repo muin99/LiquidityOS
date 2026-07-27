@@ -32,12 +32,12 @@ export class UsersService {
   }
 
   async update(id: string, data: Partial<User>): Promise<User | null> {
-  await this.usersRepository.update(id, data);
+    await this.usersRepository.update(id, data);
 
-  return this.findById(id);
+    return this.findById(id);
   }
 
   async remove(id: string) {
-  return this.usersRepository.delete(id);
+    return this.usersRepository.delete(id);
   }
 }

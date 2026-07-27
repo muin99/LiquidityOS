@@ -52,38 +52,35 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-  const user = await this.usersService.findByEmail(dto.email);
+    const user = await this.usersService.findByEmail(dto.email);
 
-  if (!user) {
-    throw new UnauthorizedException('Invalid email or password');
-  }
+    if (!user) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
 
-  const passwordMatched = await bcrypt.compare(
-    dto.password,
-    user.password,
-  );
+    const passwordMatched = await bcrypt.compare(dto.password, user.password);
 
-  if (!passwordMatched) {
-    throw new UnauthorizedException('Invalid email or password');
-  }
+    if (!passwordMatched) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
 
-  const payload = {
-    sub: user.id,
-    email: user.email,
-    role: user.role,
-  };
-
-  const accessToken = await this.jwtService.signAsync(payload);
-
-  return {
-    message: 'Login successful',
-    accessToken,
-    user: {
-      id: user.id,
-      name: user.name,
+    const payload = {
+      sub: user.id,
       email: user.email,
       role: user.role,
-    },
-  };
-}
+    };
+
+    const accessToken = await this.jwtService.signAsync(payload);
+
+    return {
+      message: 'Login successful',
+      accessToken,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    };
+  }
 }
