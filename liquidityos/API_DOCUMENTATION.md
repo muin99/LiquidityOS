@@ -203,7 +203,7 @@ Idempotency-Key: supply-001
 ## Liquidity Request APIs
 
 | Method | Endpoint | Description | Access |
-| --- | --- | --- |
+| --- | --- | --- | --- |
 | POST | `/liquidity-requests` | Create a shortage request | Provider, Agent, Coordinator |
 | GET | `/liquidity-requests` | List requests; optional `providerId`, `status` filters | Authenticated |
 | GET | `/liquidity-requests/:id` | View request | Authenticated |
@@ -231,7 +231,7 @@ Idempotency-Key: supply-001
 ## Liquidity Offer APIs
 
 | Method | Endpoint | Description | Access |
-| --- | --- | --- |
+| --- | --- | --- | --- |
 | POST | `/liquidity-offers` | Submit an offer | Coordinator |
 | GET | `/liquidity-offers` | List offers; optional `requestId`, `coordinatorId` filters | Authenticated |
 | GET | `/liquidity-offers/:id` | View offer | Authenticated |
@@ -254,7 +254,7 @@ Idempotency-Key: supply-001
 ## Liquidity Transfer APIs
 
 | Method | Endpoint | Description | Access |
-| --- | --- | --- |
+| --- | --- | --- | --- |
 | POST | `/liquidity-transfers` | Execute wallet-to-wallet transfer | Provider, Agent, Coordinator |
 | GET | `/liquidity-transfers` | List transfers | Authenticated |
 | GET | `/liquidity-transfers/:id` | View transfer | Authenticated |
@@ -273,6 +273,71 @@ Idempotency-Key: transfer-001
   "toWalletId": "DESTINATION_WALLET_UUID",
   "amount": 50000,
   "transferType": "COORDINATOR_SUPPLY"
+}
+```
+
+## Points APIs
+
+| Method | Endpoint | Description | Access |
+| --- | --- | --- | --- |
+| GET | `/points/balance` | View the current user's point balance | Authenticated |
+| GET | `/points/transactions` | View the current user's point ledger | Authenticated |
+| POST | `/points/redeem` | Redeem available points | Authenticated |
+
+### Redeem points
+
+```json
+{
+  "catalogItemId": "reward-voucher-01",
+  "points": 100
+}
+```
+
+## Notification APIs
+
+| Method | Endpoint | Description | Access |
+| --- | --- | --- | --- |
+| POST | `/notifications` | Create an in-app notification | Admin |
+| GET | `/notifications` | List current user's notifications; optional `status` filter | Authenticated |
+| PATCH | `/notifications/:id/read` | Mark one notification as read | Authenticated |
+| POST | `/notifications/read-all` | Mark all current-user notifications as read | Authenticated |
+
+### Create notification
+
+```json
+{
+  "userId": "USER_UUID",
+  "type": "REQUEST_CREATED",
+  "payload": {
+    "message": "A new liquidity request is available."
+  }
+}
+```
+
+## Dispute APIs
+
+| Method | Endpoint | Description | Access |
+| --- | --- | --- | --- |
+| POST | `/disputes` | Open a dispute for a request or transfer | Authenticated |
+| GET | `/disputes` | List all disputes | Admin |
+| GET | `/disputes/:id` | View dispute details | Authenticated |
+| POST | `/disputes/:id/resolve` | Resolve or reject dispute | Admin |
+
+### Open dispute
+
+```json
+{
+  "transferId": "TRANSFER_UUID",
+  "reason": "The recipient reported that the wallet balance did not update."
+}
+```
+
+### Resolve dispute
+
+```json
+{
+  "resolutionType": "resolved",
+  "note": "Transfer was verified and the recipient wallet was credited."
 }
 ```
 
