@@ -31,11 +31,13 @@ export class UsersService {
     });
   }
 
-  async update(id: string, data: Partial<User>) {
-    return this.usersRepository.update(id, data);
+  async update(id: string, data: Partial<User>): Promise<User | null> {
+  await this.usersRepository.update(id, data);
+
+  return this.findById(id);
   }
 
-  async delete(id: string) {
-    return this.usersRepository.delete(id);
+  async remove(id: string) {
+  return this.usersRepository.delete(id);
   }
 }
