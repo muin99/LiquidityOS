@@ -17,16 +17,21 @@ import { PointsModule } from './points/points.module';
 import { ProvidersModule } from './providers/providers.module';
 import { UsersModule } from './users/users.module';
 import { WalletsModule } from './wallets/wallets.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: 'localhost',
       username: 'postgres',
-      password: 'admin',
-      port: 5432,
-      database: 'liquidityos',
+      password: 'password',
+      port: 5433,
+      database: 'liquidity_os',
       autoLoadEntities: true,
       synchronize: true,
     }),
