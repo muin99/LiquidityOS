@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateLiquidityOfferDto } from './dto/create-liquidity-offer.dto';
 import { LiquidityOffer } from './entities/liquidity-offer.entity';
+import { UpdateLiquidityOfferDto } from './dto/update-liquidity-offer.dto';
 @Injectable()
 export class LiquidityOffersService {
   constructor(
@@ -35,7 +36,7 @@ export class LiquidityOffersService {
     if (!offer) throw new NotFoundException('Liquidity offer not found');
     return offer;
   }
-  async update(id: string, dto: Partial<CreateLiquidityOfferDto>) {
+  async update(id: string, dto: UpdateLiquidityOfferDto) {
     const offer = await this.findOne(id);
     if (offer.status !== 'submitted')
       throw new BadRequestException('Only submitted offers can be updated');

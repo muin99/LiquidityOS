@@ -22,7 +22,19 @@ export class LiquidityTransfersService {
     return this.dataSource.transaction(async (manager) => {
       const transfers = manager.getRepository(LiquidityTransfer);
       const old = await transfers.findOneBy({ idempotencyKey });
-      if (old) return old;
+      if (old) {
+        if (
+          old.fromWalletId !== dto.fromWalletId ||
+          old.toWalletId !== dto.toWalletId ||
+          old.amount !== String(dto.amount) ||
+          old.transferType !== dto.transferType
+        ) {
+          throw new ConflictException(
+            'Idempotency key was already used with a different payload',
+          );
+        }
+        return old;
+      }
       const wallets = manager.getRepository(Wallet);
       const source = await wallets.findOneBy({ id: dto.fromWalletId });
       const destination = await wallets.findOneBy({ id: dto.toWalletId });

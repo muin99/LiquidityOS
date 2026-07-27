@@ -15,6 +15,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { UserRole } from '../users/enums/user-role.enum';
 import { AgentsService } from './agents.service';
 import { OnboardAgentDto } from './dto/onboard-agent.dto';
+import { UpdateAgentDto } from './dto/update-agent.dto';
 @Controller('agents')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AgentsController {
@@ -32,7 +33,7 @@ export class AgentsController {
   }
   @Patch(':id') @Roles(UserRole.ADMIN, UserRole.PROVIDER) update(
     @Param('id') id: string,
-    @Body() dto: Partial<OnboardAgentDto>,
+    @Body() dto: UpdateAgentDto,
   ) {
     return this.agents.update(id, dto);
   }
