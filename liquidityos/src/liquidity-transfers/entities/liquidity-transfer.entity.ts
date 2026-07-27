@@ -10,6 +10,12 @@ export class LiquidityTransfer {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column('uuid', { nullable: true })
+  assignmentId?: string;
+
+  @Column('uuid', { nullable: true })
+  requestId?: string;
+
   @Column('uuid')
   fromWalletId: string;
 

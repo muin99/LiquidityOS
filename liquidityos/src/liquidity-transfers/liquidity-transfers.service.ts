@@ -59,6 +59,8 @@ export class LiquidityTransfersService {
         transfers.create({
           fromWalletId: source.id,
           toWalletId: destination.id,
+          assignmentId: dto.assignmentId,
+          requestId: dto.requestId,
           amount: String(dto.amount),
           transferType: dto.transferType,
           idempotencyKey,

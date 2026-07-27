@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsString,
   MinLength,
+  Matches,
 } from 'class-validator';
 
 import { UserRole } from '../enums/user-role.enum';
@@ -17,6 +18,10 @@ export class UpdateUserDto {
   @IsOptional()
   @IsEmail()
   email?: string;
+
+  @IsOptional()
+  @Matches(/^\+?[0-9]{7,20}$/)
+  phone?: string;
 
   @IsOptional()
   @IsString()

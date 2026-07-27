@@ -28,6 +28,8 @@ export class LiquidityRequestsService {
         areaId: dto.areaId,
         amount: String(dto.amount),
         urgency: dto.urgency.toLowerCase() as LiquidityRequest['urgency'],
+        allowPartial: dto.allowPartial ?? false,
+        notes: dto.notes,
         expiresAt: new Date(dto.expiresAt),
         status: 'open',
       }),
@@ -55,6 +57,8 @@ export class LiquidityRequestsService {
       dto.amount && { amount: String(dto.amount) },
       dto.urgency && { urgency: dto.urgency.toLowerCase() },
       dto.expiresAt && { expiresAt: new Date(dto.expiresAt) },
+      dto.allowPartial !== undefined && { allowPartial: dto.allowPartial },
+      dto.notes !== undefined && { notes: dto.notes },
     );
     return this.requests.save(request);
   }

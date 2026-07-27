@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException,
@@ -21,8 +22,14 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    // Check if email already exists
-    const existingUser = await this.usersService.findByEmail(dto.email);
+    if (!dto.email && !dto.phone) {
+      throw new BadRequestException('Email or phone is required');
+    }
+    const [emailUser, phoneUser] = await Promise.all([
+      dto.email ? this.usersService.findByEmail(dto.email) : null,
+      dto.phone ? this.usersService.findByPhone(dto.phone) : null,
+    ]);
+    const existingUser = emailUser ?? phoneUser;
 
     if (existingUser) {
       throw new ConflictException('Email already exists');
@@ -35,6 +42,7 @@ export class AuthService {
     const user = await this.usersService.create({
       name: dto.name,
       email: dto.email,
+      phone: dto.phone,
       password: hashedPassword,
       role: dto.role,
     });
@@ -46,13 +54,20 @@ export class AuthService {
         id: user.id,
         name: user.name,
         email: user.email,
+        phone: user.phone,
         role: user.role,
       },
     };
   }
 
   async login(dto: LoginDto) {
-    const user = await this.usersService.findByEmail(dto.email);
+    const identifier = dto.identifier ?? dto.email;
+    if (!identifier) {
+      throw new BadRequestException('Email or phone is required');
+    }
+    const user = identifier.includes('@')
+      ? await this.usersService.findByEmail(identifier)
+      : await this.usersService.findByPhone(identifier);
 
     if (!user) {
       throw new UnauthorizedException('Invalid email or password');
@@ -79,6 +94,7 @@ export class AuthService {
         id: user.id,
         name: user.name,
         email: user.email,
+        phone: user.phone,
         role: user.role,
       },
     };
