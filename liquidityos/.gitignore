@@ -1,5 +1,6 @@
 # compiled output
 /dist
+PROPOSAL_ALIGNMENT_NOTES.md
 /node_modules
 /build
 

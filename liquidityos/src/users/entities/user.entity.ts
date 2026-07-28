@@ -22,12 +22,14 @@ export class User {
   @Column({
     unique: true,
     length: 150,
-    nullable: true,
   })
-  email?: string;
+  email: string;
 
   @Column({ unique: true, length: 20, nullable: true })
   phone?: string;
+
+  @Column('uuid', { nullable: true })
+  providerId?: string;
 
   @Column()
   password: string;

@@ -30,7 +30,6 @@ Authorization: Bearer <accessToken>
 {
   "name": "System Admin",
   "email": "admin@example.com",
-  "phone": "+8801712345678",
   "password": "AdminPass123!",
   "role": "admin"
 }
@@ -42,7 +41,7 @@ Authorization: Bearer <accessToken>
 
 ```json
 {
-  "identifier": "admin@example.com",
+  "email": "admin@example.com",
   "password": "AdminPass123!"
 }
 ```
