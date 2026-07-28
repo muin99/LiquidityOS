@@ -22,6 +22,9 @@ export class Provider {
   })
   tenant_code: string;
 
+  @Column('uuid', { unique: true, nullable: true })
+  ownerUserId?: string;
+
   @Column({ length: 120, nullable: true })
   contact_name?: string;
 
