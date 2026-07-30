@@ -5,6 +5,7 @@ import {
   Delete,
   Param,
   Body,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 
@@ -18,33 +19,54 @@ import { Roles } from '../common/decorators/roles.decorator';
 
 import { UserRole } from './enums/user-role.enum';
 
-import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Controller('users')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   findAll() {
     return this.usersService.findAll();
   }
 
+  @Get('me')
+  getMyProfile(@Req() req: { user: { id: string } }) {
+    return this.usersService.findSafeById(req.user.id);
+  }
+
+  @Patch('me')
+  updateMyProfile(
+    @Req() req: { user: { id: string } },
+    @Body() dto: UpdateProfileDto,
+  ) {
+    return this.usersService.updateProfile(req.user.id, dto);
+  }
+
+  @Patch('me/password')
+  changeMyPassword(
+    @Req() req: { user: { id: string } },
+    @Body() dto: ChangePasswordDto,
+  ) {
+    return this.usersService.changePassword(req.user.id, dto);
+  }
+
   @Get(':id')
-  @UseGuards(JwtAuthGuard)
+  @Roles(UserRole.ADMIN)
   findOne(@Param('id') id: string) {
-    return this.usersService.findById(id);
+    return this.usersService.findSafeById(id);
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
-  update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
-    return this.usersService.update(id, dto);
+  @Roles(UserRole.ADMIN)
+  update(@Param('id') id: string, @Body() dto: UpdateProfileDto) {
+    return this.usersService.updateProfile(id, dto);
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);

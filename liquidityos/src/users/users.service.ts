@@ -1,9 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 
 import { User } from './entities/user.entity';
 import type { SafeUser } from './interfaces/safe-user.interface';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class UsersService {
@@ -32,6 +40,16 @@ export class UsersService {
     });
   }
 
+  async findSafeById(id: string): Promise<SafeUser> {
+    const user = await this.findById(id);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return this.toSafeUser(user);
+  }
+
   async findByEmail(email: string): Promise<User | null> {
     return this.usersRepository.findOne({
       where: { email },
@@ -42,14 +60,60 @@ export class UsersService {
     return this.usersRepository.findOne({ where: { phone } });
   }
 
-  async update(id: string, data: Partial<User>): Promise<User | null> {
-    await this.usersRepository.update(id, data);
+  async updateProfile(id: string, dto: UpdateProfileDto): Promise<SafeUser> {
+    const user = await this.findById(id);
 
-    return this.findById(id);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    Object.assign(user, dto);
+
+    try {
+      const updatedUser = await this.usersRepository.save(user);
+      return this.toSafeUser(updatedUser);
+    } catch (error) {
+      if ((error as { code?: string }).code === '23505') {
+        throw new ConflictException('Email or phone already exists');
+      }
+      throw error;
+    }
+  }
+
+  async changePassword(
+    id: string,
+    dto: ChangePasswordDto,
+  ): Promise<{ message: string }> {
+    const user = await this.findById(id);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const passwordMatches = await bcrypt.compare(
+      dto.currentPassword,
+      user.password,
+    );
+
+    if (!passwordMatches) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    user.password = await bcrypt.hash(dto.newPassword, 10);
+    await this.usersRepository.save(user);
+
+    return { message: 'Password changed successfully' };
   }
 
   async remove(id: string) {
-    return this.usersRepository.delete(id);
+    const user = await this.findById(id);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    await this.usersRepository.remove(user);
+    return { message: 'User deleted' };
   }
 
   private toSafeUser(user: User): SafeUser {
