@@ -4,10 +4,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, ILike, Repository } from 'typeorm';
 import { CreateAreaDto } from './dto/create-area.dto';
 import { Area } from './entities/area.entity';
 import { UpdateAreaDto } from './dto/update-area.dto';
+import { AreaListQueryDto } from './dto/area-list-query.dto';
+
 @Injectable()
 export class AreasService {
   constructor(
@@ -22,8 +24,34 @@ export class AreasService {
       throw error;
     }
   }
-  findAll() {
-    return this.areas.find({ order: { name: 'ASC' } });
+  async findAll(query: AreaListQueryDto) {
+    const baseWhere: FindOptionsWhere<Area> = {
+      ...(query.status && { status: query.status }),
+    };
+
+    const where: FindOptionsWhere<Area> | FindOptionsWhere<Area>[] =
+      query.search
+        ? [
+            { ...baseWhere, name: ILike(`%${query.search}%`) },
+            { ...baseWhere, code: ILike(`%${query.search}%`) },
+          ]
+        : baseWhere;
+
+    const [data, total] = await this.areas.findAndCount({
+      where,
+      order: { name: 'ASC' },
+      skip: (query.page - 1) * query.limit,
+      take: query.limit,
+    });
+
+    return {
+      data,
+      meta: {
+        page: query.page,
+        limit: query.limit,
+        total,
+      },
+    };
   }
   async findOne(id: string) {
     const area = await this.areas.findOneBy({ id });
@@ -33,7 +61,14 @@ export class AreasService {
   async update(id: string, dto: UpdateAreaDto) {
     const area = await this.findOne(id);
     Object.assign(area, dto);
-    return this.areas.save(area);
+    try {
+      return await this.areas.save(area);
+    } catch (error) {
+      if ((error as { code?: string }).code === '23505') {
+        throw new ConflictException('Area code already exists');
+      }
+      throw error;
+    }
   }
   async remove(id: string) {
     const area = await this.findOne(id);

@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -15,6 +16,8 @@ import { UserRole } from '../users/enums/user-role.enum';
 import { AreasService } from './areas.service';
 import { CreateAreaDto } from './dto/create-area.dto';
 import { UpdateAreaDto } from './dto/update-area.dto';
+import { AreaListQueryDto } from './dto/area-list-query.dto';
+
 @Controller('areas')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AreasController {
@@ -22,8 +25,9 @@ export class AreasController {
   @Post() @Roles(UserRole.ADMIN) create(@Body() dto: CreateAreaDto) {
     return this.areas.create(dto);
   }
-  @Get() findAll() {
-    return this.areas.findAll();
+  @Get()
+  findAll(@Query() query: AreaListQueryDto) {
+    return this.areas.findAll(query);
   }
   @Get(':id') findOne(@Param('id') id: string) {
     return this.areas.findOne(id);
