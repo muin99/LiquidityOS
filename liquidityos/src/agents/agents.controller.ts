@@ -16,6 +16,8 @@ import { UserRole } from '../users/enums/user-role.enum';
 import { AgentsService } from './agents.service';
 import { OnboardAgentDto } from './dto/onboard-agent.dto';
 import { UpdateAgentDto } from './dto/update-agent.dto';
+import { AgentListQueryDto } from './dto/agent-list-query.dto';
+
 @Controller('agents')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AgentsController {
@@ -25,8 +27,9 @@ export class AgentsController {
   ) {
     return this.agents.create(dto);
   }
-  @Get() findAll(@Query('providerId') providerId?: string) {
-    return this.agents.findAll(providerId);
+  @Get()
+  findAll(@Query() query: AgentListQueryDto) {
+    return this.agents.findAll(query);
   }
   @Get(':id') findOne(@Param('id') id: string) {
     return this.agents.findOne(id);

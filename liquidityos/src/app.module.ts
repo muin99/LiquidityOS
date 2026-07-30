@@ -18,6 +18,7 @@ import { ProvidersModule } from './providers/providers.module';
 import { UsersModule } from './users/users.module';
 import { WalletsModule } from './wallets/wallets.module';
 import { ConfigModule } from '@nestjs/config';
+import { BalanceSnapshotsModule } from './balance-snapshots/balance-snapshots.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { ConfigModule } from '@nestjs/config';
     MailerModule,
     DisputesModule,
     AuditLogsModule,
+    BalanceSnapshotsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

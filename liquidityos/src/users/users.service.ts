@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { User } from './entities/user.entity';
+import type { SafeUser } from './interfaces/safe-user.interface';
 
 @Injectable()
 export class UsersService {
@@ -15,8 +16,14 @@ export class UsersService {
     return this.usersRepository.save(user);
   }
 
-  async findAll(): Promise<User[]> {
-    return this.usersRepository.find();
+  async findAll(): Promise<SafeUser[]> {
+    const users = await this.usersRepository.find({
+      order: {
+        createdAt: 'DESC',
+      },
+    });
+
+    return users.map((user) => this.toSafeUser(user));
   }
 
   async findById(id: string): Promise<User | null> {
@@ -43,5 +50,19 @@ export class UsersService {
 
   async remove(id: string) {
     return this.usersRepository.delete(id);
+  }
+
+  private toSafeUser(user: User): SafeUser {
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      providerId: user.providerId,
+      role: user.role,
+      status: user.status,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
   }
 }

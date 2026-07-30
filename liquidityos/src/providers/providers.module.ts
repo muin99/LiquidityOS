@@ -24,5 +24,6 @@ import { Provider } from './entities/provider.entity';
   ],
   providers: [ProvidersService],
   controllers: [ProvidersController],
+  exports: [ProvidersService],
 })
 export class ProvidersModule {}
