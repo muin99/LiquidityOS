@@ -9,6 +9,8 @@ import { DataSource } from 'typeorm';
 import { CreateLiquidityTransferDto } from './dto/create-liquidity-transfer.dto';
 import { LiquidityTransfer } from './entities/liquidity-transfer.entity';
 import { Wallet } from '../wallets/entities/wallet.entity';
+import { LiquidityAssignment } from '../liquidity-offers/entities/liquidity-assignment.entity';
+import { LiquidityRequest } from '../liquidity-requests/entities/liquidity-request.entity';
 @Injectable()
 export class LiquidityTransfersService {
   constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
@@ -36,6 +38,31 @@ export class LiquidityTransfersService {
         return old;
       }
       const wallets = manager.getRepository(Wallet);
+      let assignment: LiquidityAssignment | null = null;
+
+      if (dto.assignmentId) {
+        assignment = await manager
+          .getRepository(LiquidityAssignment)
+          .findOneBy({ id: dto.assignmentId });
+
+        if (!assignment) {
+          throw new NotFoundException('Liquidity assignment not found');
+        }
+        if (assignment.status !== 'active') {
+          throw new ConflictException('Liquidity assignment is not active');
+        }
+        if (assignment.assignedAmount !== String(dto.amount)) {
+          throw new BadRequestException(
+            'Transfer amount must match the assigned amount',
+          );
+        }
+        if (dto.requestId && dto.requestId !== assignment.requestId) {
+          throw new BadRequestException(
+            'Transfer request does not match the assignment',
+          );
+        }
+      }
+
       const source = await wallets.findOneBy({ id: dto.fromWalletId });
       const destination = await wallets.findOneBy({ id: dto.toWalletId });
       if (!source || !destination)
@@ -55,12 +82,12 @@ export class LiquidityTransfersService {
         BigInt(destination.balance) + BigInt(dto.amount)
       ).toString();
       await wallets.save([source, destination]);
-      return transfers.save(
+      const transfer = await transfers.save(
         transfers.create({
           fromWalletId: source.id,
           toWalletId: destination.id,
           assignmentId: dto.assignmentId,
-          requestId: dto.requestId,
+          requestId: dto.requestId ?? assignment?.requestId,
           amount: String(dto.amount),
           transferType: dto.transferType,
           idempotencyKey,
@@ -68,6 +95,22 @@ export class LiquidityTransfersService {
           completedAt: new Date(),
         }),
       );
+
+      if (assignment) {
+        assignment.status = 'completed';
+        await manager.getRepository(LiquidityAssignment).save(assignment);
+
+        const request = await manager
+          .getRepository(LiquidityRequest)
+          .findOneBy({ id: assignment.requestId });
+        if (!request) {
+          throw new NotFoundException('Assigned liquidity request not found');
+        }
+        request.status = 'fulfilled';
+        await manager.getRepository(LiquidityRequest).save(request);
+      }
+
+      return transfer;
     });
   }
   async findOne(id: string) {
