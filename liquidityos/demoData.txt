@@ -1,0 +1,1775 @@
+LIQUIDITYOS COMPLETE USER WORKFLOW — POSTMAN FACULTY DEMO
+=========================================================
+
+Start the API:
+
+  cd /Users/onukrom/Downloads/LiquidityOS/liquidityos
+  npm run start:dev
+
+Postman configuration:
+
+  - Use the complete URLs shown below.
+  - For JSON requests, select Body -> raw -> JSON.
+  - Postman automatically adds Content-Type: application/json.
+  - After successful login, manually copy accessToken.
+  - For protected requests, select Authorization -> Bearer Token and paste it.
+  - No Postman environment or variables are required.
+
+
+STEP 1 — HEALTH CHECK
+=====================
+
+Purpose:
+  Prove the NestJS API is running and returning JSON.
+
+Method:
+  GET
+
+URL:
+  http://localhost:3000/api/v1/status
+
+Authorization:
+  No Auth
+
+Expected status:
+  200 OK
+
+Expected response:
+
+  {
+    "application": "LiquidityOS",
+    "status": "running",
+    "database": "connected",
+    "timestamp": "CURRENT-ISO-TIMESTAMP"
+  }
+
+What to tell the faculty:
+  "The controller receives GET /status, calls AppService, and NestJS converts
+   the returned JavaScript object into JSON."
+
+
+STEP 2 — INVALID REGISTRATION
+=============================
+
+Purpose:
+  Demonstrate DTO validation and ValidationPipe.
+
+Method:
+  POST
+
+URL:
+  http://localhost:3000/api/v1/auth/register
+
+Authorization:
+  No Auth
+
+Header:
+  Content-Type: application/json
+
+Body:
+
+  {
+    "name": "",
+    "email": "wrong-email",
+    "password": "123",
+    "role": "unknown"
+  }
+
+Expected status:
+  400 Bad Request
+
+Expected response shape:
+
+  {
+    "message": [
+      "name should not be empty",
+      "email must be an email",
+      "password must be longer than or equal to 8 characters",
+      "role must be one of the following values: admin, provider, agent, coordinator"
+    ],
+    "error": "Bad Request",
+    "statusCode": 400
+  }
+
+The exact validation-message order may differ.
+
+What to tell the faculty:
+  "RegisterDto contains class-validator decorators. The global ValidationPipe
+   rejects invalid data before AuthController calls AuthService."
+
+
+STEP 3 — SUCCESSFUL REGISTRATION
+================================
+
+Purpose:
+  Create a user, hash the password, and insert the user into PostgreSQL.
+
+Method:
+  POST
+
+URL:
+  http://localhost:3000/api/v1/auth/register
+
+Authorization:
+  No Auth
+
+Header:
+  Content-Type: application/json
+
+Body:
+
+  {
+    "name": "Faculty Demo Agent",
+    "email": "faculty.agent@example.com",
+    "phone": "+8801712345678",
+    "password": "Password123",
+    "role": "agent"
+  }
+
+Expected status:
+  201 Created
+
+Expected response shape:
+
+  {
+    "message": "User registered successfully",
+    "user": {
+      "id": "GENERATED-UUID",
+      "name": "Faculty Demo Agent",
+      "email": "faculty.agent@example.com",
+      "phone": "+8801712345678",
+      "role": "agent"
+    }
+  }
+
+The UUID is generated automatically and will be different.
+
+What to tell the faculty:
+  "AuthService checks duplicate email and phone values, hashes Password123
+   using bcrypt, and saves the User entity through TypeORM. The API never
+   returns the password hash."
+
+Database flow:
+
+  RegisterDto
+    -> AuthController
+    -> AuthService
+    -> bcrypt.hash()
+    -> TypeORM repository
+    -> PostgreSQL INSERT
+
+
+STEP 4 — DUPLICATE REGISTRATION
+===============================
+
+Purpose:
+  Demonstrate a service-level business rule.
+
+Send the exact registration request from Step 3 again.
+
+Expected status:
+  409 Conflict
+
+Expected response:
+
+  {
+    "message": "Email or phone already exists",
+    "error": "Conflict",
+    "statusCode": 409
+  }
+
+What to tell the faculty:
+  "DTO validation checks input format. AuthService separately checks the
+   business rule that email and phone must be unique."
+
+
+STEP 5 — LOGIN WITH WRONG PASSWORD
+==================================
+
+Purpose:
+  Demonstrate rejected credentials.
+
+Method:
+  POST
+
+URL:
+  http://localhost:3000/api/v1/auth/login
+
+Authorization:
+  No Auth
+
+Header:
+  Content-Type: application/json
+
+Body:
+
+  {
+    "email": "faculty.agent@example.com",
+    "password": "WrongPassword"
+  }
+
+Expected status:
+  401 Unauthorized
+
+Expected response:
+
+  {
+    "message": "Invalid email or password",
+    "error": "Unauthorized",
+    "statusCode": 401
+  }
+
+What to tell the faculty:
+  "bcrypt.compare() compares the submitted password with the database hash.
+   The original password is never decrypted."
+
+
+STEP 6 — SUCCESSFUL LOGIN AND JWT
+=================================
+
+Purpose:
+  Authenticate the user and receive a JWT access token.
+
+Method:
+  POST
+
+URL:
+  http://localhost:3000/api/v1/auth/login
+
+Authorization:
+  No Auth
+
+Header:
+  Content-Type: application/json
+
+Body:
+
+  {
+    "email": "faculty.agent@example.com",
+    "password": "Password123"
+  }
+
+Expected status in the current project:
+  201 Created
+
+Expected response shape:
+
+  {
+    "message": "Login successful",
+    "accessToken": "eyJ...COMPLETE-JWT...",
+    "user": {
+      "id": "GENERATED-UUID",
+      "name": "Faculty Demo Agent",
+      "email": "faculty.agent@example.com",
+      "phone": "+8801712345678",
+      "role": "agent"
+    }
+  }
+
+ACTION:
+  Copy the complete accessToken value without quotation marks.
+
+What to tell the faculty:
+  "JwtService signs a payload containing the user ID, email, and role. The JWT
+   is signed using JWT_SECRET and receives an expiration time."
+
+
+STEP 7 — PROTECTED ROUTE WITHOUT JWT
+====================================
+
+Purpose:
+  Demonstrate JwtAuthGuard rejecting an unauthenticated request.
+
+Method:
+  GET
+
+URL:
+  http://localhost:3000/api/v1/users/me
+
+Authorization:
+  No Auth
+
+Expected status:
+  401 Unauthorized
+
+Expected response:
+
+  {
+    "message": "Unauthorized",
+    "statusCode": 401
+  }
+
+What to tell the faculty:
+  "JwtAuthGuard executes before the controller. Because the request has no
+   bearer token, the guard returns 401 and the controller never runs."
+
+
+STEP 8 — VIEW MY SAFE DATABASE PROFILE
+======================================
+
+Purpose:
+  Demonstrate JWT authentication and a safe user response.
+
+Method:
+  GET
+
+URL:
+  http://localhost:3000/api/v1/users/me
+
+Authorization:
+  Bearer Token
+
+Token:
+  Paste the accessToken copied from Step 6.
+
+Expected status:
+  200 OK
+
+Expected response shape:
+
+  {
+    "id": "GENERATED-UUID",
+    "name": "Faculty Demo Agent",
+    "email": "faculty.agent@example.com",
+    "phone": "+8801712345678",
+    "role": "agent",
+    "status": "pending",
+    "createdAt": "GENERATED-TIMESTAMP",
+    "updatedAt": "GENERATED-TIMESTAMP"
+  }
+
+Important:
+  The response must not contain "password".
+
+What to tell the faculty:
+  "JwtStrategy verifies the token and stores its validated identity in
+   request.user. The controller uses request.user.id instead of trusting an ID
+   sent by the client. UsersService maps the entity to SafeUser so the password
+   hash cannot leave the API."
+
+Authentication flow:
+
+  Bearer token
+    -> JwtAuthGuard
+    -> JwtStrategy
+    -> request.user
+    -> UsersController
+    -> UsersService
+    -> PostgreSQL SELECT
+
+
+STEP 9 — UPDATE MY OWN PROFILE
+==============================
+
+Purpose:
+  Demonstrate ownership, DTO validation, and PostgreSQL UPDATE.
+
+Method:
+  PATCH
+
+URL:
+  http://localhost:3000/api/v1/users/me
+
+Authorization:
+  Bearer Token
+
+Token:
+  Paste the same accessToken.
+
+Header:
+  Content-Type: application/json
+
+Body:
+
+  {
+    "name": "Faculty Demo Agent Updated",
+    "phone": "+8801812345678"
+  }
+
+Expected status:
+  200 OK
+
+Expected response shape:
+
+  {
+    "id": "SAME-USER-UUID",
+    "name": "Faculty Demo Agent Updated",
+    "email": "faculty.agent@example.com",
+    "phone": "+8801812345678",
+    "role": "agent",
+    "status": "pending",
+    "createdAt": "ORIGINAL-TIMESTAMP",
+    "updatedAt": "NEW-TIMESTAMP"
+  }
+
+Important:
+  The response must not contain "password".
+
+What to tell the faculty:
+  "The endpoint does not accept a user ID. It gets the authenticated user's ID
+   from request.user, preventing a normal user from updating another profile.
+   UpdateProfileDto allows name, email, and phone but does not allow role,
+   status, or password changes."
+
+
+STEP 10 — CHANGE PASSWORD WITH WRONG CURRENT PASSWORD
+=====================================================
+
+Purpose:
+  Demonstrate verification of the current password.
+
+Method:
+  PATCH
+
+URL:
+  http://localhost:3000/api/v1/users/me/password
+
+Authorization:
+  Bearer Token
+
+Token:
+  Paste the accessToken.
+
+Header:
+  Content-Type: application/json
+
+Body:
+
+  {
+    "currentPassword": "WrongPassword",
+    "newPassword": "NewPassword456"
+  }
+
+Expected status:
+  401 Unauthorized
+
+Expected response:
+
+  {
+    "message": "Current password is incorrect",
+    "error": "Unauthorized",
+    "statusCode": 401
+  }
+
+
+STEP 11 — SUCCESSFULLY CHANGE PASSWORD
+======================================
+
+Purpose:
+  Verify the current password and store a new bcrypt hash.
+
+Method:
+  PATCH
+
+URL:
+  http://localhost:3000/api/v1/users/me/password
+
+Authorization:
+  Bearer Token
+
+Token:
+  Paste the accessToken.
+
+Header:
+  Content-Type: application/json
+
+Body:
+
+  {
+    "currentPassword": "Password123",
+    "newPassword": "NewPassword456"
+  }
+
+Expected status:
+  200 OK
+
+Expected response:
+
+  {
+    "message": "Password changed successfully"
+  }
+
+What to tell the faculty:
+  "UsersService verifies currentPassword with bcrypt.compare(), hashes
+   newPassword with bcrypt.hash(), and saves the new hash. Neither password
+   appears in the response."
+
+
+STEP 12 — PROVE THE OLD PASSWORD NO LONGER WORKS
+================================================
+
+Method:
+  POST
+
+URL:
+  http://localhost:3000/api/v1/auth/login
+
+Authorization:
+  No Auth
+
+Header:
+  Content-Type: application/json
+
+Body:
+
+  {
+    "email": "faculty.agent@example.com",
+    "password": "Password123"
+  }
+
+Expected status:
+  401 Unauthorized
+
+
+STEP 13 — LOGIN WITH THE NEW PASSWORD
+=====================================
+
+Method:
+  POST
+
+URL:
+  http://localhost:3000/api/v1/auth/login
+
+Authorization:
+  No Auth
+
+Header:
+  Content-Type: application/json
+
+Body:
+
+  {
+    "email": "faculty.agent@example.com",
+    "password": "NewPassword456"
+  }
+
+Expected status:
+  201 Created
+
+Expected response:
+  A new accessToken and the updated user profile.
+
+What to tell the faculty:
+  "The failed old-password login and successful new-password login prove that
+   the stored bcrypt hash was updated."
+
+
+STEP 14 — AUTHENTICATED AGENT ATTEMPTS ADMIN OPERATION
+======================================================
+
+Purpose:
+  Demonstrate role authorization and 403 Forbidden.
+
+Method:
+  GET
+
+URL:
+  http://localhost:3000/api/v1/users
+
+Authorization:
+  Bearer Token
+
+Token:
+  Paste an accessToken received from Step 13.
+
+Expected status:
+  403 Forbidden
+
+Expected response:
+
+  {
+    "message": "Forbidden resource",
+    "error": "Forbidden",
+    "statusCode": 403
+  }
+
+What to tell the faculty:
+  "JwtAuthGuard accepts the valid token, so the user is authenticated.
+   RolesGuard then reads @Roles(UserRole.ADMIN). Because this user has the
+   agent role, authorization fails with 403."
+
+
+STEP 15 — SHOW THE USER IN DBEAVER
+==================================
+
+Connection:
+
+  Type:     PostgreSQL
+  Host:     127.0.0.1
+  Port:     5432
+  Database: liquidity_os
+  Username: onukrom
+  Password: leave blank
+
+Open:
+
+  liquidity_os
+    -> Schemas
+    -> public
+    -> Tables
+    -> users
+    -> View Data
+    -> All Rows
+
+Show:
+
+  - UUID generated by PostgreSQL
+  - Updated name and phone
+  - bcrypt password hash instead of either plain password
+  - role = agent
+  - createdAt and updatedAt timestamps
+
+
+HTTP STATUS CODES DEMONSTRATED
+==============================
+
+  200 OK           Successful read, update, or password change
+  201 Created      Registration or login in the current project
+  400 Bad Request  DTO validation failed
+  401 Unauthorized Authentication missing or credentials incorrect
+  403 Forbidden    Valid user but insufficient role
+  409 Conflict     Email or phone already exists
+
+
+COMPLETE FACULTY EXPLANATION
+============================
+
+"The workflow begins with DTO validation through NestJS ValidationPipe.
+AuthService checks duplicate identities, hashes passwords using bcrypt, and
+stores users through TypeORM in PostgreSQL.
+
+During login, bcrypt compares the submitted password with the stored hash.
+JwtService creates a signed token containing the user's ID, email, and role.
+
+For protected requests, JwtAuthGuard activates Passport's JWT strategy. The
+strategy validates the bearer token and places the identity in request.user.
+The self-profile endpoints use request.user.id, so the client cannot select
+another user's ID. SafeUser responses exclude password hashes.
+
+RolesGuard performs authorization separately from authentication. A valid
+agent token receives 403 when it attempts an admin-only operation.
+
+Finally, the password-change flow verifies the current password, stores a new
+bcrypt hash, rejects the old password, and accepts the new password."
+
+
+MEMORY MAP
+==========
+
+Registration:
+
+  JSON -> DTO/Pipe -> Controller -> Service -> bcrypt -> Repository -> Database
+
+Login:
+
+  JSON -> DTO/Pipe -> bcrypt.compare -> JwtService -> accessToken
+
+Protected profile:
+
+  Bearer JWT -> JwtAuthGuard -> JwtStrategy -> request.user -> Controller
+
+Authorization:
+
+  request.user.role -> RolesGuard -> allow or 403
+
+Database response:
+
+  User entity -> SafeUser mapping -> password-free JSON
+
+
+======================================================================
+PART 2 — COMPLETE LIQUIDITYOS PROJECT DEMONSTRATION
+======================================================================
+
+Continue after the user/JWT demonstration above.
+
+You will need four tokens. Copy and keep them temporarily in a text editor:
+
+  ADMIN_TOKEN
+  PROVIDER_TOKEN
+  AGENT_TOKEN
+  COORDINATOR_TOKEN
+
+You will also copy generated UUIDs from responses:
+
+  PROVIDER_ID
+  AREA_ID
+  AGENT_USER_ID
+  AGENT_ID
+  COORDINATOR_USER_ID
+  COORDINATOR_ID
+  AGENT_CASH_WALLET_ID
+  COORDINATOR_CASH_WALLET_ID
+  REQUEST_ID
+  OFFER_ID
+  ASSIGNMENT_ID
+  TRANSFER_ID
+  NOTIFICATION_ID
+  DISPUTE_ID
+
+Replace capitalized placeholders in URLs and JSON with actual copied UUIDs.
+
+
+STEP 16 — CREATE DEMONSTRATION ADMIN
+====================================
+
+Method:
+  POST
+
+URL:
+  http://localhost:3000/api/v1/auth/register
+
+Authorization:
+  No Auth
+
+Header:
+  Content-Type: application/json
+
+Body:
+
+  {
+    "name": "LiquidityOS Demo Admin",
+    "email": "demo.admin@example.com",
+    "phone": "+8801900000001",
+    "password": "AdminPassword123",
+    "role": "admin"
+  }
+
+Expected status:
+  201 Created
+
+Expected response shape:
+
+  {
+    "message": "User registered successfully",
+    "user": {
+      "id": "ADMIN-USER-UUID",
+      "name": "LiquidityOS Demo Admin",
+      "email": "demo.admin@example.com",
+      "phone": "+8801900000001",
+      "role": "admin"
+    }
+  }
+
+Important explanation:
+  "The current academic implementation permits role selection during public
+   registration. In a production system, public admin registration must be
+   disabled and the first admin should be created through a secure seed or
+   deployment process."
+
+Login:
+
+  POST http://localhost:3000/api/v1/auth/login
+
+Body:
+
+  {
+    "email": "demo.admin@example.com",
+    "password": "AdminPassword123"
+  }
+
+Expected:
+  201 Created with accessToken.
+
+Copy accessToken as ADMIN_TOKEN.
+
+
+STEP 17 — REGISTER A PROVIDER AND CREATE ITS ORGANIZATION
+========================================================
+
+Method:
+  POST
+
+URL:
+  http://localhost:3000/api/v1/auth/register
+
+Authorization:
+  No Auth
+
+Header:
+  Content-Type: application/json
+
+Body:
+
+  {
+    "name": "Demo Provider Owner",
+    "email": "demo.provider@example.com",
+    "phone": "+8801900000002",
+    "password": "ProviderPassword123",
+    "role": "provider",
+    "providerName": "Demo MFS Provider",
+    "tenantCode": "DEMO_MFS",
+    "contactName": "Demo Provider Support",
+    "contactEmail": "support.demo@example.com",
+    "contactPhone": "+8801900000012"
+  }
+
+Expected status:
+  201 Created
+
+Expected response shape:
+
+  {
+    "message": "User registered successfully",
+    "user": {
+      "id": "PROVIDER-USER-UUID",
+      "name": "Demo Provider Owner",
+      "email": "demo.provider@example.com",
+      "role": "provider",
+      "providerId": "PROVIDER_ID"
+    },
+    "provider": {
+      "id": "PROVIDER_ID",
+      "name": "Demo MFS Provider",
+      "tenant_code": "DEMO_MFS",
+      "status": "pending"
+    }
+  }
+
+Copy provider.id as PROVIDER_ID.
+
+Login:
+
+  POST http://localhost:3000/api/v1/auth/login
+
+Body:
+
+  {
+    "email": "demo.provider@example.com",
+    "password": "ProviderPassword123"
+  }
+
+Copy accessToken as PROVIDER_TOKEN.
+
+What to explain:
+  "Provider registration uses a database transaction. The user and provider
+   must both be created, or both operations are rolled back."
+
+
+STEP 18 — ADMIN APPROVES THE PROVIDER
+=====================================
+
+Method:
+  POST
+
+URL:
+  http://localhost:3000/api/v1/providers/PROVIDER_ID/approve
+
+Authorization:
+  Bearer Token -> paste ADMIN_TOKEN
+
+Header:
+  Content-Type: application/json
+
+Body:
+
+  {
+    "approvalNote": "Provider documents verified for faculty demonstration"
+  }
+
+Expected status:
+  201 Created
+
+Expected response contains:
+
+  {
+    "id": "PROVIDER_ID",
+    "name": "Demo MFS Provider",
+    "status": "approved",
+    "onboarding_note": "Provider documents verified for faculty demonstration"
+  }
+
+Role test:
+  Repeat with AGENT_TOKEN later. Expected 403 Forbidden.
+
+
+STEP 19 — ADMIN CREATES AN AREA
+===============================
+
+Method:
+  POST
+
+URL:
+  http://localhost:3000/api/v1/areas
+
+Authorization:
+  Bearer Token -> paste ADMIN_TOKEN
+
+Header:
+  Content-Type: application/json
+
+Body:
+
+  {
+    "name": "Dhaka North",
+    "code": "DHAKA_NORTH",
+    "status": "active"
+  }
+
+Expected status:
+  201 Created
+
+Expected response:
+
+  {
+    "id": "AREA_ID",
+    "name": "Dhaka North",
+    "code": "DHAKA_NORTH",
+    "status": "active",
+    "createdAt": "GENERATED-TIMESTAMP",
+    "updatedAt": "GENERATED-TIMESTAMP"
+  }
+
+Copy id as AREA_ID.
+
+Read all areas:
+
+  GET http://localhost:3000/api/v1/areas
+  Authorization: Bearer ADMIN_TOKEN
+
+Expected:
+
+  {
+    "data": [
+      {
+        "id": "AREA_ID",
+        "name": "Dhaka North",
+        "code": "DHAKA_NORTH",
+        "status": "active"
+      }
+    ],
+    "meta": {
+      "page": 1,
+      "limit": 20,
+      "total": 1
+    }
+  }
+
+The total may be greater if the database already contains areas.
+
+CRUD examples:
+
+  GET    http://localhost:3000/api/v1/areas/AREA_ID
+  PATCH  http://localhost:3000/api/v1/areas/AREA_ID
+  DELETE http://localhost:3000/api/v1/areas/AREA_ID
+
+Do not delete the area until the complete demonstration finishes.
+
+
+STEP 20 — REGISTER AN AGENT USER
+================================
+
+Method:
+  POST
+
+URL:
+  http://localhost:3000/api/v1/auth/register
+
+Authorization:
+  No Auth
+
+Body:
+
+  {
+    "name": "Demo Agent User",
+    "email": "demo.agent@example.com",
+    "phone": "+8801900000003",
+    "password": "AgentPassword123",
+    "role": "agent"
+  }
+
+Expected:
+  201 Created
+
+Copy user.id as AGENT_USER_ID.
+
+Login:
+
+  POST http://localhost:3000/api/v1/auth/login
+
+Body:
+
+  {
+    "email": "demo.agent@example.com",
+    "password": "AgentPassword123"
+  }
+
+Copy accessToken as AGENT_TOKEN.
+
+
+STEP 21 — PROVIDER ONBOARDS THE AGENT
+=====================================
+
+Method:
+  POST
+
+URL:
+  http://localhost:3000/api/v1/agents/onboard
+
+Authorization:
+  Bearer Token -> paste PROVIDER_TOKEN
+
+Header:
+  Content-Type: application/json
+
+Body:
+
+  {
+    "userId": "AGENT_USER_ID",
+    "providerId": "PROVIDER_ID",
+    "areaId": "AREA_ID",
+    "shopName": "Demo Agent Shop",
+    "address": "Road 10, Dhaka North"
+  }
+
+Expected status:
+  201 Created
+
+Expected response:
+
+  {
+    "id": "AGENT_ID",
+    "userId": "AGENT_USER_ID",
+    "providerId": "PROVIDER_ID",
+    "areaId": "AREA_ID",
+    "shopName": "Demo Agent Shop",
+    "address": "Road 10, Dhaka North",
+    "status": "active"
+  }
+
+Copy id as AGENT_ID.
+
+The service verifies:
+
+  - User exists.
+  - User has the agent role.
+  - Provider exists and is approved.
+  - Area exists and is active.
+  - User does not already have an agent profile.
+
+List agents:
+
+  GET http://localhost:3000/api/v1/agents
+  Authorization: Bearer PROVIDER_TOKEN
+
+Filter by provider:
+
+  GET http://localhost:3000/api/v1/agents?providerId=PROVIDER_ID
+  Authorization: Bearer PROVIDER_TOKEN
+
+
+STEP 22 — REGISTER AND ONBOARD A COORDINATOR
+=============================================
+
+Register:
+
+  POST http://localhost:3000/api/v1/auth/register
+
+Body:
+
+  {
+    "name": "Demo Coordinator User",
+    "email": "demo.coordinator@example.com",
+    "phone": "+8801900000004",
+    "password": "CoordinatorPassword123",
+    "role": "coordinator"
+  }
+
+Expected:
+  201 Created
+
+Copy user.id as COORDINATOR_USER_ID.
+
+Login and copy COORDINATOR_TOKEN:
+
+  POST http://localhost:3000/api/v1/auth/login
+
+Body:
+
+  {
+    "email": "demo.coordinator@example.com",
+    "password": "CoordinatorPassword123"
+  }
+
+Onboard:
+
+  POST http://localhost:3000/api/v1/coordinators/onboard
+  Authorization: Bearer ADMIN_TOKEN
+
+Body:
+
+  {
+    "userId": "COORDINATOR_USER_ID",
+    "areaId": "AREA_ID",
+    "name": "Dhaka North Coordinator"
+  }
+
+Expected response:
+
+  {
+    "id": "COORDINATOR_ID",
+    "userId": "COORDINATOR_USER_ID",
+    "areaId": "AREA_ID",
+    "name": "Dhaka North Coordinator",
+    "status": "active"
+  }
+
+Copy id as COORDINATOR_ID.
+
+Current limitation:
+  Provider/coordinator approval endpoints exist, but no public endpoint creates
+  the initial coordinator_providers link. Do not demonstrate approval unless
+  the link has been seeded in PostgreSQL.
+
+
+STEP 23 — CREATE AGENT AND COORDINATOR WALLETS
+==============================================
+
+Create agent physical-cash wallet:
+
+Method:
+  POST
+
+URL:
+  http://localhost:3000/api/v1/wallets
+
+Authorization:
+  Bearer Token -> paste PROVIDER_TOKEN
+
+Body:
+
+  {
+    "ownerId": "AGENT_ID",
+    "ownerType": "AGENT",
+    "providerId": "PROVIDER_ID",
+    "walletType": "PHYSICAL_CASH"
+  }
+
+Expected response:
+
+  {
+    "id": "AGENT_CASH_WALLET_ID",
+    "ownerId": "AGENT_ID",
+    "ownerType": "agent",
+    "providerId": "PROVIDER_ID",
+    "walletType": "physical_cash",
+    "balance": "0",
+    "status": "active"
+  }
+
+Copy id as AGENT_CASH_WALLET_ID.
+
+Create coordinator physical-cash wallet:
+
+  POST http://localhost:3000/api/v1/wallets
+  Authorization: Bearer PROVIDER_TOKEN
+
+Body:
+
+  {
+    "ownerId": "COORDINATOR_ID",
+    "ownerType": "COORDINATOR",
+    "providerId": "PROVIDER_ID",
+    "walletType": "PHYSICAL_CASH"
+  }
+
+Copy the returned id as COORDINATOR_CASH_WALLET_ID.
+
+List provider wallets:
+
+  GET http://localhost:3000/api/v1/wallets?providerId=PROVIDER_ID
+  Authorization: Bearer PROVIDER_TOKEN
+
+What to explain:
+  "DTO enums arrive in uppercase. WalletsService converts them to the lowercase
+   values stored by the Wallet entity."
+
+
+STEP 24 — AGENT REPORTS A BALANCE SNAPSHOT
+==========================================
+
+Method:
+  POST
+
+URL:
+  http://localhost:3000/api/v1/balance-snapshots
+
+Authorization:
+  Bearer Token -> paste AGENT_TOKEN
+
+Body:
+
+  {
+    "agentId": "AGENT_ID",
+    "cashBalance": 5000,
+    "eMoneyBalance": 100000,
+    "recordedAt": "2027-01-15T10:00:00.000Z"
+  }
+
+Expected:
+  201 Created
+
+Expected response:
+
+  {
+    "id": "SNAPSHOT-UUID",
+    "agentId": "AGENT_ID",
+    "cashBalance": "5000",
+    "eMoneyBalance": "100000",
+    "recordedAt": "2027-01-15T10:00:00.000Z",
+    "createdAt": "GENERATED-TIMESTAMP"
+  }
+
+What to explain:
+  "The DTO accepts numeric balances. The service converts them to strings
+   because PostgreSQL bigint values must not lose JavaScript precision."
+
+
+STEP 25 — AGENT CREATES A LIQUIDITY REQUEST
+===========================================
+
+Business story:
+  The agent has only 5,000 physical cash and requests 50,000 more.
+
+Method:
+  POST
+
+URL:
+  http://localhost:3000/api/v1/liquidity-requests
+
+Authorization:
+  Bearer Token -> paste AGENT_TOKEN
+
+Body:
+
+  {
+    "requesterId": "AGENT_ID",
+    "requesterType": "AGENT",
+    "liquidityType": "PHYSICAL_CASH",
+    "providerId": "PROVIDER_ID",
+    "areaId": "AREA_ID",
+    "amount": 50000,
+    "urgency": "HIGH",
+    "allowPartial": false,
+    "expiresAt": "2027-12-31T23:59:59.000Z",
+    "notes": "Physical cash required for customer withdrawals"
+  }
+
+Expected status:
+  201 Created
+
+Expected response contains:
+
+  {
+    "id": "REQUEST_ID",
+    "requesterId": "AGENT_ID",
+    "requesterType": "agent",
+    "liquidityType": "physical_cash",
+    "providerId": "PROVIDER_ID",
+    "areaId": "AREA_ID",
+    "amount": "50000",
+    "urgency": "high",
+    "status": "open",
+    "allowPartial": false
+  }
+
+Copy id as REQUEST_ID.
+
+List open requests:
+
+  GET http://localhost:3000/api/v1/liquidity-requests?providerId=PROVIDER_ID&status=open
+  Authorization: Bearer COORDINATOR_TOKEN
+
+
+STEP 26 — COORDINATOR SUBMITS A LIQUIDITY OFFER
+===============================================
+
+Method:
+  POST
+
+URL:
+  http://localhost:3000/api/v1/liquidity-offers
+
+Authorization:
+  Bearer Token -> paste COORDINATOR_TOKEN
+
+Body:
+
+  {
+    "requestId": "REQUEST_ID",
+    "coordinatorId": "COORDINATOR_ID",
+    "availableAmount": 50000,
+    "etaMinutes": 20,
+    "note": "Can deliver physical cash within twenty minutes"
+  }
+
+Expected:
+  201 Created
+
+Expected response:
+
+  {
+    "id": "OFFER_ID",
+    "requestId": "REQUEST_ID",
+    "coordinatorId": "COORDINATOR_ID",
+    "availableAmount": "50000",
+    "etaMinutes": 20,
+    "note": "Can deliver physical cash within twenty minutes",
+    "status": "submitted"
+  }
+
+Copy id as OFFER_ID.
+
+Read offers for the request:
+
+  GET http://localhost:3000/api/v1/liquidity-offers?requestId=REQUEST_ID
+  Authorization: Bearer AGENT_TOKEN
+
+STEP 26A — AGENT ACCEPTS THE COORDINATOR OFFER
+==============================================
+
+Business rule:
+  The user who opened the request, their provider, or an administrator may
+  accept an eligible offer. Only one active assignment is allowed per request.
+
+Method:
+  POST
+
+URL:
+  http://localhost:3000/api/v1/liquidity-offers/OFFER_ID/accept
+
+Authorization:
+  Bearer Token -> paste AGENT_TOKEN
+
+Header:
+  Content-Type: application/json
+
+Body:
+
+  {
+    "assignedAmount": 50000
+  }
+
+Expected:
+  201 Created
+
+Expected response:
+
+  {
+    "id": "ASSIGNMENT_ID",
+    "requestId": "REQUEST_ID",
+    "offerId": "OFFER_ID",
+    "assignedTo": "COORDINATOR_USER_ID",
+    "assignedBy": "AGENT_USER_ID",
+    "assignedAmount": "50000",
+    "status": "active",
+    "createdAt": "GENERATED-TIMESTAMP",
+    "updatedAt": "GENERATED-TIMESTAMP"
+  }
+
+Copy id as ASSIGNMENT_ID.
+
+Database changes made in one transaction:
+
+  - Selected offer status becomes accepted.
+  - Request status becomes assigned.
+  - Competing submitted offers become rejected.
+  - One liquidity_assignments row is created.
+
+Send the acceptance request again.
+
+Expected:
+  409 Conflict because the offer is no longer submitted and the request
+  already has an assignment.
+
+What to explain:
+  "The service locks the offer and request rows with pessimistic write locks.
+   A unique requestId constraint and transaction ensure that two concurrent
+   requests cannot create two assignments for the same liquidity request."
+
+
+STEP 27 — PREPARE WALLET FUNDS FOR TRANSFER DEMO
+================================================
+
+Current limitation:
+  New wallets start with balance 0. The project has no admin wallet top-up or
+  balance-adjustment API. To demonstrate a successful transfer, seed only the
+  coordinator demo wallet in DBeaver.
+
+In DBeaver SQL Editor, replace the UUID and run:
+
+  UPDATE wallets
+  SET balance = 100000
+  WHERE id = 'COORDINATOR_CASH_WALLET_ID';
+
+Verify:
+
+  SELECT id, "ownerId", "walletType", balance
+  FROM wallets
+  WHERE id = 'COORDINATOR_CASH_WALLET_ID';
+
+What to tell the faculty:
+  "This row is seeded only because the current project has no initial funding
+   endpoint. The actual transfer itself is executed through the REST API and a
+   TypeORM database transaction."
+
+
+STEP 28 — EXECUTE AN ATOMIC, IDEMPOTENT TRANSFER
+================================================
+
+Method:
+  POST
+
+URL:
+  http://localhost:3000/api/v1/liquidity-transfers
+
+Authorization:
+  Bearer Token -> paste COORDINATOR_TOKEN
+
+Headers:
+
+  Content-Type: application/json
+  Idempotency-Key: faculty-transfer-001
+
+Body:
+
+  {
+    "fromWalletId": "COORDINATOR_CASH_WALLET_ID",
+    "toWalletId": "AGENT_CASH_WALLET_ID",
+    "amount": 50000,
+    "transferType": "COORDINATOR_SUPPLY",
+    "requestId": "REQUEST_ID",
+    "assignmentId": "ASSIGNMENT_ID"
+  }
+
+Expected:
+  201 Created
+
+Expected response:
+
+  {
+    "id": "TRANSFER_ID",
+    "requestId": "REQUEST_ID",
+    "assignmentId": "ASSIGNMENT_ID",
+    "fromWalletId": "COORDINATOR_CASH_WALLET_ID",
+    "toWalletId": "AGENT_CASH_WALLET_ID",
+    "amount": "50000",
+    "transferType": "COORDINATOR_SUPPLY",
+    "idempotencyKey": "faculty-transfer-001",
+    "status": "success",
+    "completedAt": "GENERATED-TIMESTAMP"
+  }
+
+Copy id as TRANSFER_ID.
+
+Send the exact request again with the same Idempotency-Key.
+
+Expected:
+  The API returns the existing transfer instead of deducting twice.
+
+Then send a different amount with the same key.
+
+Expected:
+  409 Conflict
+
+What to explain:
+  "The transfer runs inside a TypeORM transaction. Source debit, destination
+   credit, and transfer creation either all succeed or all roll back.
+   Idempotency prevents retries from moving money twice. A successful assigned
+   transfer marks the assignment completed and the request fulfilled."
+
+Verify request:
+
+  GET http://localhost:3000/api/v1/liquidity-requests/REQUEST_ID
+  Authorization: Bearer AGENT_TOKEN
+
+Expected:
+  status = "fulfilled"
+
+The liquidity_assignments row should now have:
+  status = "completed"
+
+Verify wallets:
+
+  GET http://localhost:3000/api/v1/wallets/COORDINATOR_CASH_WALLET_ID
+  GET http://localhost:3000/api/v1/wallets/AGENT_CASH_WALLET_ID
+
+Expected balances:
+
+  Coordinator: "50000"
+  Agent:       "50000"
+
+
+STEP 29 — POINTS
+================
+
+View agent point balance:
+
+  GET http://localhost:3000/api/v1/points/balance
+  Authorization: Bearer AGENT_TOKEN
+
+Expected:
+
+  {
+    "balance": 0
+  }
+
+The balance may differ if point rows already exist.
+
+View point ledger:
+
+  GET http://localhost:3000/api/v1/points/transactions
+  Authorization: Bearer AGENT_TOKEN
+
+Expected:
+  JSON array.
+
+Attempt to redeem without sufficient points:
+
+  POST http://localhost:3000/api/v1/points/redeem
+  Authorization: Bearer AGENT_TOKEN
+
+Body:
+
+  {
+    "catalogItemId": "demo-reward",
+    "points": 100
+  }
+
+Expected:
+  400 Bad Request with "Insufficient points".
+
+Current limitation:
+  Points are not automatically awarded by the transfer service.
+
+
+STEP 30 — ADMIN CREATES AN AGENT NOTIFICATION
+=============================================
+
+Method:
+  POST
+
+URL:
+  http://localhost:3000/api/v1/notifications
+
+Authorization:
+  Bearer Token -> paste ADMIN_TOKEN
+
+Body:
+
+  {
+    "userId": "AGENT_USER_ID",
+    "type": "TRANSFER_COMPLETED",
+    "payload": {
+      "transferId": "TRANSFER_ID",
+      "amount": 50000,
+      "message": "Liquidity transfer completed successfully"
+    }
+  }
+
+Expected:
+  201 Created
+
+Expected response:
+
+  {
+    "id": "NOTIFICATION_ID",
+    "userId": "AGENT_USER_ID",
+    "type": "TRANSFER_COMPLETED",
+    "payload": {
+      "transferId": "TRANSFER_ID",
+      "amount": 50000,
+      "message": "Liquidity transfer completed successfully"
+    },
+    "status": "sent",
+    "createdAt": "GENERATED-TIMESTAMP"
+  }
+
+Copy id as NOTIFICATION_ID.
+
+Agent reads notifications:
+
+  GET http://localhost:3000/api/v1/notifications
+  Authorization: Bearer AGENT_TOKEN
+
+Mark one as read:
+
+  PATCH http://localhost:3000/api/v1/notifications/NOTIFICATION_ID/read
+  Authorization: Bearer AGENT_TOKEN
+
+Expected response contains:
+
+  {
+    "id": "NOTIFICATION_ID",
+    "status": "read",
+    "readAt": "GENERATED-TIMESTAMP"
+  }
+
+Mark all as read:
+
+  POST http://localhost:3000/api/v1/notifications/read-all
+  Authorization: Bearer AGENT_TOKEN
+
+Expected:
+
+  {
+    "message": "All notifications marked as read"
+  }
+
+
+STEP 31 — AGENT OPENS A DISPUTE
+===============================
+
+Method:
+  POST
+
+URL:
+  http://localhost:3000/api/v1/disputes
+
+Authorization:
+  Bearer Token -> paste AGENT_TOKEN
+
+Body:
+
+  {
+    "transferId": "TRANSFER_ID",
+    "reason": "The delivered physical cash amount requires manual verification."
+  }
+
+Expected:
+  201 Created
+
+Expected response:
+
+  {
+    "id": "DISPUTE_ID",
+    "transferId": "TRANSFER_ID",
+    "openedBy": "AGENT_USER_ID",
+    "reason": "The delivered physical cash amount requires manual verification.",
+    "status": "open"
+  }
+
+Copy id as DISPUTE_ID.
+
+
+STEP 32 — ADMIN VIEWS AND RESOLVES THE DISPUTE
+==============================================
+
+List disputes:
+
+  GET http://localhost:3000/api/v1/disputes
+  Authorization: Bearer ADMIN_TOKEN
+
+Resolve:
+
+  POST http://localhost:3000/api/v1/disputes/DISPUTE_ID/resolve
+  Authorization: Bearer ADMIN_TOKEN
+
+Body:
+
+  {
+    "resolutionType": "resolved",
+    "note": "Transfer records and wallet balances were verified."
+  }
+
+Expected response contains:
+
+  {
+    "id": "DISPUTE_ID",
+    "status": "resolved",
+    "resolutionNote": "Transfer records and wallet balances were verified."
+  }
+
+What to explain:
+  "Any authenticated participant can open a dispute, but only an administrator
+   can list all disputes and resolve one."
+
+
+STEP 33 — PROVIDER OPERATIONAL VIEWS
+====================================
+
+Provider agent list:
+
+  GET http://localhost:3000/api/v1/providers/PROVIDER_ID/agents
+  Authorization: Bearer PROVIDER_TOKEN
+
+Provider shortage list:
+
+  GET http://localhost:3000/api/v1/providers/PROVIDER_ID/shortages?status=open
+  Authorization: Bearer PROVIDER_TOKEN
+
+Provider dashboard:
+
+  GET http://localhost:3000/api/v1/providers/PROVIDER_ID/dashboard
+  Authorization: Bearer PROVIDER_TOKEN
+
+Expected dashboard shape:
+
+  {
+    "openShortages": 1,
+    "assignedRequests": 0,
+    "fulfilledRequests": 0,
+    "activeAgents": 1,
+    "approvedCoordinators": 0,
+    "fillRate": 0
+  }
+
+Counts may differ if the database contains other demo records.
+
+
+STEP 34 — SWAGGER DOCUMENTATION
+===============================
+
+Open in a browser:
+
+  http://localhost:3000/api/docs
+
+OpenAPI JSON:
+
+  http://localhost:3000/api/docs-json
+
+What to explain:
+  "Swagger scans NestJS decorators and generates interactive API documentation.
+   The bearer-authentication scheme allows protected endpoints to be tested."
+
+
+FULL PROJECT STORY TO PRESENT
+=============================
+
+"First, four actors register and authenticate with JWT. The administrator
+creates a geographic area and approves an MFS provider. The approved provider
+onboards an agent, while the administrator onboards a coordinator.
+
+The provider creates physical-cash wallets for the agent and coordinator. The
+agent reports a low physical-cash balance and opens a high-urgency liquidity
+request. The coordinator discovers that request and submits a matching offer.
+
+After demo funding is seeded, the coordinator executes a wallet transfer.
+TypeORM performs the debit and credit atomically, and the Idempotency-Key
+prevents duplicate transfers.
+
+The demonstration then covers point balance, notifications, dispute opening
+and resolution, provider shortage monitoring, dashboard statistics, role
+authorization, DTO validation, PostgreSQL persistence, and Swagger
+documentation."
+
+
+FULL PROJECT LIMITATIONS TO STATE HONESTLY
+==========================================
+
+  1. Public role selection currently permits demo admin registration.
+     Production must use secure admin seeding.
+
+  2. No API creates the initial coordinator-provider relationship link.
+
+  3. No initial wallet-funding endpoint exists, so the transfer demo needs one
+     seeded wallet balance.
+
+  4. Points and notifications are not automatically created by transfers.
+
+  5. Mailer and audit-log modules are not implemented.
+
+  6. Ownership and tenant checks are incomplete in several older endpoints.
+
+Stating limitations is better than claiming behavior that the API does not
+currently implement.
