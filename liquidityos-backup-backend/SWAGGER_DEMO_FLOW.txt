@@ -1,0 +1,453 @@
+LIQUIDITYOS SWAGGER END-TO-END DEMO
+====================================
+
+Swagger URL:
+  http://localhost:3000/api/docs
+
+API base URL:
+  http://localhost:3000/api/v1
+
+Shared demo password:
+  DemoPass123!
+
+IMPORTANT SWAGGER AUTHORIZATION INSTRUCTIONS
+--------------------------------------------
+
+1. Call POST /api/v1/auth/login with one of the accounts below.
+2. Copy only the value of accessToken from the response.
+3. Click Authorize at the top of Swagger.
+4. Paste the token value. Do not add quotation marks.
+5. Login as a different role and replace the authorized token whenever the
+   instructions switch actors.
+
+JWTs expire, so permanent tokens are intentionally not stored in this file.
+Generate a fresh token from the login endpoint before each demonstration.
+
+
+DEMO LOGIN ACCOUNTS
+===================
+
+ADMIN
+  Email:    demo.admin@example.com
+  Password: DemoPass123!
+  User ID:  e4adcaf7-b298-4ed4-a55e-f89e56b50354
+
+PROVIDER
+  Email:    demo.provider@example.com
+  Password: DemoPass123!
+  User ID:  df73585c-2cba-49ec-b316-216c4067d2d1
+
+AGENT
+  Email:    demo.agent@example.com
+  Password: DemoPass123!
+  User ID:  1a4c4443-b11e-42d5-b8c7-7a1622596a03
+
+COORDINATOR
+  Email:    demo.coordinator@example.com
+  Password: DemoPass123!
+  User ID:  f5bcb456-2cda-4879-b062-0b409ce32e37
+
+Login DTO for any account:
+
+  {
+    "email": "demo.agent@example.com",
+    "password": "DemoPass123!"
+  }
+
+
+PERMANENT SEEDED RESOURCE IDS
+=============================
+
+Provider ID:
+  7ca782b3-abc0-486d-a4c7-3bfd96bc4f3f
+
+Area ID:
+  9562f349-b010-4f5c-b888-8714fd148c76
+
+Agent profile ID:
+  7eb9de31-21b1-4a8e-bada-b18718f4156e
+
+Coordinator profile ID:
+  65596142-d0ce-49b4-9f0a-2f888f5d20f0
+
+Agent physical-cash wallet ID:
+  531f1e4a-326d-4c31-8bb5-d41fbe23e4bc
+
+Coordinator physical-cash wallet ID:
+  8a6e1ecb-9715-4484-9ddc-fff8b7d20e9f
+
+
+COMPLETED AND VERIFIED FLOW IDS
+===============================
+
+Before-transfer snapshot ID:
+  7e2504aa-dd76-4cb0-863d-b01a89cb3267
+
+After-transfer snapshot ID:
+  914ffaad-b24a-4080-b809-e3e39ac4e8c6
+
+Liquidity request ID:
+  bfd44b91-5735-43e6-b8b0-c9ab23ba842e
+
+Liquidity offer ID:
+  9fe0e975-47ff-4608-9207-677fe83d1dcb
+
+Assignment ID:
+  c84a589a-e0c2-49bb-9ee8-b9ba2c0933e1
+
+Transfer ID:
+  4c1127cf-aa3d-4273-9775-75d898fa23ad
+
+Verified final state:
+  Request status:              fulfilled
+  Coordinator wallet balance: 0
+  Agent wallet balance:       50000
+  Admin-visible transfers:    1
+  Admin-visible snapshots:    2
+
+
+INSPECT THE ALREADY COMPLETED FLOW
+==================================
+
+Use any authenticated token unless a specific role is stated.
+
+1. View the fulfilled request
+
+   GET /api/v1/liquidity-requests/bfd44b91-5735-43e6-b8b0-c9ab23ba842e
+
+   Expected status field:
+     "status": "fulfilled"
+
+2. View the accepted offer
+
+   GET /api/v1/liquidity-offers/9fe0e975-47ff-4608-9207-677fe83d1dcb
+
+   Expected status field:
+     "status": "accepted"
+
+3. View the completed transfer
+
+   GET /api/v1/liquidity-transfers/4c1127cf-aa3d-4273-9775-75d898fa23ad
+
+   Expected:
+     amount = "50000"
+     status = "success"
+     transferType = "COORDINATOR_SUPPLY"
+
+4. View the agent wallet
+
+   GET /api/v1/wallets/531f1e4a-326d-4c31-8bb5-d41fbe23e4bc
+
+   Expected:
+     balance = "50000"
+
+5. View the coordinator wallet
+
+   GET /api/v1/wallets/8a6e1ecb-9715-4484-9ddc-fff8b7d20e9f
+
+   Expected:
+     balance = "0"
+
+6. Login as ADMIN and list all transfers
+
+   GET /api/v1/liquidity-transfers
+
+7. Login as ADMIN and list the agent's reported snapshots
+
+   GET /api/v1/balance-snapshots
+
+   The list contains:
+     Before snapshot: cashBalance = "5000"
+     After snapshot:  cashBalance = "55000"
+
+8. Login as ADMIN and read each snapshot directly
+
+   GET /api/v1/balance-snapshots/7e2504aa-dd76-4cb0-863d-b01a89cb3267
+   GET /api/v1/balance-snapshots/914ffaad-b24a-4080-b809-e3e39ac4e8c6
+
+
+RUN A NEW LIVE END-TO-END DEMO
+==============================
+
+The permanent users, provider, area, profiles, and wallets are reused.
+For every new live run, copy the new request, offer, assignment, snapshot, and
+transfer IDs returned by Swagger.
+
+
+STEP 1 — ADMIN FUNDS THE COORDINATOR WALLET
+-------------------------------------------
+
+Login as ADMIN.
+
+POST /api/v1/wallets/8a6e1ecb-9715-4484-9ddc-fff8b7d20e9f/fund
+
+Body:
+
+  {
+    "amount": 50000
+  }
+
+Expected:
+  201 Created
+
+
+STEP 2 — AGENT REPORTS THE LOW-CASH SNAPSHOT
+--------------------------------------------
+
+Login as AGENT.
+
+POST /api/v1/balance-snapshots
+
+Body:
+
+  {
+    "agentId": "7eb9de31-21b1-4a8e-bada-b18718f4156e",
+    "cashBalance": 5000,
+    "eMoneyBalance": 100000,
+    "recordedAt": "2026-07-30T11:00:00.000Z"
+  }
+
+Copy the returned id as NEW_BEFORE_SNAPSHOT_ID.
+
+
+STEP 3 — AGENT REQUESTS PHYSICAL CASH
+-------------------------------------
+
+Remain logged in as AGENT.
+
+POST /api/v1/liquidity-requests
+
+Body:
+
+  {
+    "requesterId": "7eb9de31-21b1-4a8e-bada-b18718f4156e",
+    "requesterType": "AGENT",
+    "liquidityType": "PHYSICAL_CASH",
+    "providerId": "7ca782b3-abc0-486d-a4c7-3bfd96bc4f3f",
+    "areaId": "9562f349-b010-4f5c-b888-8714fd148c76",
+    "amount": 50000,
+    "urgency": "HIGH",
+    "allowPartial": false,
+    "expiresAt": "2027-12-31T23:59:59.000Z",
+    "notes": "Physical cash required for customer withdrawals"
+  }
+
+Copy the returned id as NEW_REQUEST_ID.
+
+
+STEP 4 — COORDINATOR FINDS THE OPEN REQUEST
+-------------------------------------------
+
+Login as COORDINATOR.
+
+GET /api/v1/liquidity-requests?providerId=7ca782b3-abc0-486d-a4c7-3bfd96bc4f3f&status=open
+
+Find NEW_REQUEST_ID in the response.
+
+
+STEP 5 — COORDINATOR OFFERS TO FULFIL THE REQUEST
+-------------------------------------------------
+
+Remain logged in as COORDINATOR.
+
+POST /api/v1/liquidity-offers
+
+Replace NEW_REQUEST_ID:
+
+  {
+    "requestId": "NEW_REQUEST_ID",
+    "coordinatorId": "65596142-d0ce-49b4-9f0a-2f888f5d20f0",
+    "availableAmount": 50000,
+    "etaMinutes": 20,
+    "note": "Can deliver physical cash within twenty minutes"
+  }
+
+Copy the returned id as NEW_OFFER_ID.
+
+
+STEP 6 — AGENT ACCEPTS THE OFFER
+--------------------------------
+
+Login as AGENT.
+
+POST /api/v1/liquidity-offers/NEW_OFFER_ID/accept
+
+Body:
+
+  {
+    "assignedAmount": 50000
+  }
+
+Copy the returned id as NEW_ASSIGNMENT_ID.
+
+
+STEP 7 — COORDINATOR COMPLETES THE TRANSFER
+-------------------------------------------
+
+Login as COORDINATOR.
+
+POST /api/v1/liquidity-transfers
+
+Required header:
+  Idempotency-Key: demo-live-transfer-002
+
+IMPORTANT:
+  Use a new unique Idempotency-Key for each separate live demo.
+
+Replace NEW_REQUEST_ID and NEW_ASSIGNMENT_ID:
+
+  {
+    "fromWalletId": "8a6e1ecb-9715-4484-9ddc-fff8b7d20e9f",
+    "toWalletId": "531f1e4a-326d-4c31-8bb5-d41fbe23e4bc",
+    "amount": 50000,
+    "transferType": "COORDINATOR_SUPPLY",
+    "requestId": "NEW_REQUEST_ID",
+    "assignmentId": "NEW_ASSIGNMENT_ID"
+  }
+
+Expected:
+  201 Created
+  status = "success"
+
+Copy the returned id as NEW_TRANSFER_ID.
+
+
+STEP 8 — AGENT REPORTS THE AFTER-TRANSFER SNAPSHOT
+--------------------------------------------------
+
+Login as AGENT.
+
+POST /api/v1/balance-snapshots
+
+The permanent agent wallet already contained 50000 from the seeded flow.
+After one additional live transfer, its wallet balance is 100000.
+
+  {
+    "agentId": "7eb9de31-21b1-4a8e-bada-b18718f4156e",
+    "cashBalance": 100000,
+    "eMoneyBalance": 100000,
+    "recordedAt": "2026-07-30T11:30:00.000Z"
+  }
+
+Copy the returned id as NEW_AFTER_SNAPSHOT_ID.
+
+
+STEP 9 — ADMIN REVIEWS THE RESULT
+---------------------------------
+
+Login as ADMIN.
+
+List transfers:
+  GET /api/v1/liquidity-transfers
+
+Read the new transfer:
+  GET /api/v1/liquidity-transfers/NEW_TRANSFER_ID
+
+List snapshots:
+  GET /api/v1/balance-snapshots
+
+Read the request:
+  GET /api/v1/liquidity-requests/NEW_REQUEST_ID
+
+Read the agent wallet:
+  GET /api/v1/wallets/531f1e4a-326d-4c31-8bb5-d41fbe23e4bc
+
+Read the coordinator wallet:
+  GET /api/v1/wallets/8a6e1ecb-9715-4484-9ddc-fff8b7d20e9f
+
+Expected after one additional live run:
+  New request status:          fulfilled
+  Agent wallet balance:       100000
+  Coordinator wallet balance: 0
+
+
+SEEDED SETUP DTO REFERENCE
+==========================
+
+These resources already exist. The DTOs are retained here for presentation
+and reference; resending them will cause duplicate/conflict responses.
+
+Admin registration:
+
+  {
+    "name": "Demo System Admin",
+    "email": "demo.admin@example.com",
+    "password": "DemoPass123!",
+    "role": "admin"
+  }
+
+Provider registration:
+
+  {
+    "name": "Demo Provider Owner",
+    "email": "demo.provider@example.com",
+    "password": "DemoPass123!",
+    "role": "provider",
+    "providerName": "Demo MFS Provider",
+    "tenantCode": "DEMO_MFS",
+    "contactName": "Demo Operations",
+    "contactEmail": "operations@example.com",
+    "contactPhone": "+8801711111111"
+  }
+
+Agent registration:
+
+  {
+    "name": "Demo Agent Karim",
+    "email": "demo.agent@example.com",
+    "password": "DemoPass123!",
+    "role": "agent"
+  }
+
+Coordinator registration:
+
+  {
+    "name": "Demo Coordinator Ayesha",
+    "email": "demo.coordinator@example.com",
+    "password": "DemoPass123!",
+    "role": "coordinator"
+  }
+
+Area:
+
+  {
+    "name": "Dhaka Demo Zone",
+    "code": "DHA_DEMO",
+    "status": "active"
+  }
+
+Agent onboarding:
+
+  {
+    "userId": "1a4c4443-b11e-42d5-b8c7-7a1622596a03",
+    "providerId": "7ca782b3-abc0-486d-a4c7-3bfd96bc4f3f",
+    "areaId": "9562f349-b010-4f5c-b888-8714fd148c76",
+    "shopName": "Karim Telecom Demo",
+    "address": "House 12, Road 5, Dhaka"
+  }
+
+Coordinator onboarding:
+
+  {
+    "userId": "f5bcb456-2cda-4879-b062-0b409ce32e37",
+    "areaId": "9562f349-b010-4f5c-b888-8714fd148c76",
+    "name": "Dhaka Demo Liquidity Team"
+  }
+
+Agent wallet:
+
+  {
+    "ownerId": "7eb9de31-21b1-4a8e-bada-b18718f4156e",
+    "ownerType": "AGENT",
+    "providerId": "7ca782b3-abc0-486d-a4c7-3bfd96bc4f3f",
+    "walletType": "PHYSICAL_CASH"
+  }
+
+Coordinator wallet:
+
+  {
+    "ownerId": "65596142-d0ce-49b4-9f0a-2f888f5d20f0",
+    "ownerType": "COORDINATOR",
+    "providerId": "7ca782b3-abc0-486d-a4c7-3bfd96bc4f3f",
+    "walletType": "PHYSICAL_CASH"
+  }

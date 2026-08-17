@@ -1,0 +1,793 @@
+LIQUIDITYOS — FINAL POSTMAN API GUIDE
+=====================================
+
+This file uses data that is already present in the local liquidity_os
+database. The main request-to-transfer flow has been executed and verified.
+
+
+1. POSTMAN ENVIRONMENT VARIABLES
+================================
+
+Create a Postman environment and add these variables:
+
+baseUrl = http://localhost:3000/api/v1
+
+password = DemoPass123!
+
+adminEmail = demo.admin@example.com
+providerEmail = demo.provider@example.com
+agentEmail = demo.agent@example.com
+coordinatorEmail = demo.coordinator@example.com
+
+adminUserId = e4adcaf7-b298-4ed4-a55e-f89e56b50354
+providerUserId = df73585c-2cba-49ec-b316-216c4067d2d1
+agentUserId = 1a4c4443-b11e-42d5-b8c7-7a1622596a03
+coordinatorUserId = f5bcb456-2cda-4879-b062-0b409ce32e37
+
+providerId = 7ca782b3-abc0-486d-a4c7-3bfd96bc4f3f
+areaId = 9562f349-b010-4f5c-b888-8714fd148c76
+agentId = 7eb9de31-21b1-4a8e-bada-b18718f4156e
+coordinatorId = 65596142-d0ce-49b4-9f0a-2f888f5d20f0
+
+agentWalletId = 531f1e4a-326d-4c31-8bb5-d41fbe23e4bc
+coordinatorWalletId = 8a6e1ecb-9715-4484-9ddc-fff8b7d20e9f
+
+completedRequestId = bfd44b91-5735-43e6-b8b0-c9ab23ba842e
+completedOfferId = 9fe0e975-47ff-4608-9207-677fe83d1dcb
+completedAssignmentId = c84a589a-e0c2-49bb-9ee8-b9ba2c0933e1
+completedTransferId = 4c1127cf-aa3d-4273-9775-75d898fa23ad
+
+beforeSnapshotId = 7e2504aa-dd76-4cb0-863d-b01a89cb3267
+afterSnapshotId = 914ffaad-b24a-4080-b809-e3e39ac4e8c6
+
+notificationId = b7426e23-5f87-43d9-856e-c95e7220d5e8
+disputeId = c03d8a9a-0b0c-41a6-a3a5-28ecb1803101
+
+Create these empty variables. The login requests will fill them:
+
+adminToken =
+providerToken =
+agentToken =
+coordinatorToken =
+
+For a new live flow, also create:
+
+newRequestId =
+newOfferId =
+newAssignmentId =
+newTransferId =
+newBeforeSnapshotId =
+newAfterSnapshotId =
+
+
+2. POSTMAN LOGIN REQUESTS AND TOKEN SCRIPTS
+===========================================
+
+POST {{baseUrl}}/auth/login
+
+Admin body:
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{password}}"
+}
+
+Tests script for the admin login request:
+
+pm.test("Admin login succeeded", function () {
+  pm.response.to.have.status(201);
+});
+pm.environment.set("adminToken", pm.response.json().accessToken);
+
+Repeat the same request for the other roles:
+
+Provider body:
+
+{
+  "email": "{{providerEmail}}",
+  "password": "{{password}}"
+}
+
+Provider Tests script:
+
+pm.environment.set("providerToken", pm.response.json().accessToken);
+
+Agent body:
+
+{
+  "email": "{{agentEmail}}",
+  "password": "{{password}}"
+}
+
+Agent Tests script:
+
+pm.environment.set("agentToken", pm.response.json().accessToken);
+
+Coordinator body:
+
+{
+  "email": "{{coordinatorEmail}}",
+  "password": "{{password}}"
+}
+
+Coordinator Tests script:
+
+pm.environment.set("coordinatorToken", pm.response.json().accessToken);
+
+For protected requests, select Authorization -> Bearer Token and use the
+appropriate variable:
+
+{{adminToken}}
+{{providerToken}}
+{{agentToken}}
+{{coordinatorToken}}
+
+
+3. INSPECT THE COMPLETED BUSINESS FLOW
+======================================
+
+All these requests use Bearer {{adminToken}}.
+
+GET {{baseUrl}}/liquidity-requests/{{completedRequestId}}
+Expected request status: fulfilled
+
+GET {{baseUrl}}/liquidity-offers/{{completedOfferId}}
+Expected offer status: accepted
+
+GET {{baseUrl}}/liquidity-transfers/{{completedTransferId}}
+Expected transfer status: success
+
+GET {{baseUrl}}/wallets/{{agentWalletId}}
+Expected balance: 50000
+
+GET {{baseUrl}}/wallets/{{coordinatorWalletId}}
+Expected balance: 0
+
+GET {{baseUrl}}/balance-snapshots/{{beforeSnapshotId}}
+Expected cashBalance: 5000
+
+GET {{baseUrl}}/balance-snapshots/{{afterSnapshotId}}
+Expected cashBalance: 55000
+
+GET {{baseUrl}}/liquidity-transfers
+GET {{baseUrl}}/balance-snapshots
+
+
+4. RUN A NEW AGENT-TO-COORDINATOR FLOW
+======================================
+
+STEP 1 — ADMIN FUNDS THE COORDINATOR
+------------------------------------
+
+POST {{baseUrl}}/wallets/{{coordinatorWalletId}}/fund
+Bearer {{adminToken}}
+
+{
+  "amount": 50000
+}
+
+
+STEP 2 — AGENT REPORTS LOW CASH
+-------------------------------
+
+POST {{baseUrl}}/balance-snapshots
+Bearer {{agentToken}}
+
+{
+  "agentId": "{{agentId}}",
+  "cashBalance": 5000,
+  "eMoneyBalance": 100000,
+  "recordedAt": "2026-07-30T13:00:00.000Z"
+}
+
+Tests script:
+
+pm.environment.set("newBeforeSnapshotId", pm.response.json().id);
+
+
+STEP 3 — AGENT REQUESTS MONEY
+-----------------------------
+
+POST {{baseUrl}}/liquidity-requests
+Bearer {{agentToken}}
+
+{
+  "requesterId": "{{agentId}}",
+  "requesterType": "AGENT",
+  "liquidityType": "PHYSICAL_CASH",
+  "providerId": "{{providerId}}",
+  "areaId": "{{areaId}}",
+  "amount": 50000,
+  "urgency": "HIGH",
+  "allowPartial": false,
+  "expiresAt": "2027-12-31T23:59:59.000Z",
+  "notes": "Postman live cash request"
+}
+
+Tests script:
+
+pm.test("Request created", function () {
+  pm.response.to.have.status(201);
+});
+pm.environment.set("newRequestId", pm.response.json().id);
+
+
+STEP 4 — COORDINATOR LISTS OPEN REQUESTS
+----------------------------------------
+
+GET {{baseUrl}}/liquidity-requests?providerId={{providerId}}&status=open
+Bearer {{coordinatorToken}}
+
+
+STEP 5 — COORDINATOR SUBMITS AN OFFER
+-------------------------------------
+
+POST {{baseUrl}}/liquidity-offers
+Bearer {{coordinatorToken}}
+
+{
+  "requestId": "{{newRequestId}}",
+  "coordinatorId": "{{coordinatorId}}",
+  "availableAmount": 50000,
+  "etaMinutes": 20,
+  "note": "Coordinator can fulfil this request"
+}
+
+Tests script:
+
+pm.environment.set("newOfferId", pm.response.json().id);
+
+
+STEP 6 — AGENT ACCEPTS THE OFFER
+--------------------------------
+
+POST {{baseUrl}}/liquidity-offers/{{newOfferId}}/accept
+Bearer {{agentToken}}
+
+{
+  "assignedAmount": 50000
+}
+
+Tests script:
+
+pm.environment.set("newAssignmentId", pm.response.json().id);
+
+
+STEP 7 — COORDINATOR TRANSFERS THE MONEY
+----------------------------------------
+
+POST {{baseUrl}}/liquidity-transfers
+Bearer {{coordinatorToken}}
+
+Header:
+
+Idempotency-Key: postman-live-transfer-{{$timestamp}}
+
+Body:
+
+{
+  "fromWalletId": "{{coordinatorWalletId}}",
+  "toWalletId": "{{agentWalletId}}",
+  "amount": 50000,
+  "transferType": "COORDINATOR_SUPPLY",
+  "requestId": "{{newRequestId}}",
+  "assignmentId": "{{newAssignmentId}}"
+}
+
+Tests script:
+
+pm.test("Transfer succeeded", function () {
+  pm.response.to.have.status(201);
+  pm.expect(pm.response.json().status).to.eql("success");
+});
+pm.environment.set("newTransferId", pm.response.json().id);
+
+
+STEP 8 — AGENT REPORTS THE NEW BALANCE
+--------------------------------------
+
+POST {{baseUrl}}/balance-snapshots
+Bearer {{agentToken}}
+
+The seeded wallet starts with 50000. After one new flow it becomes 100000.
+
+{
+  "agentId": "{{agentId}}",
+  "cashBalance": 100000,
+  "eMoneyBalance": 100000,
+  "recordedAt": "2026-07-30T13:30:00.000Z"
+}
+
+Tests script:
+
+pm.environment.set("newAfterSnapshotId", pm.response.json().id);
+
+
+STEP 9 — ADMIN REVIEWS EVERYTHING
+---------------------------------
+
+GET {{baseUrl}}/liquidity-requests/{{newRequestId}}
+GET {{baseUrl}}/liquidity-transfers/{{newTransferId}}
+GET {{baseUrl}}/liquidity-transfers
+GET {{baseUrl}}/balance-snapshots
+GET {{baseUrl}}/wallets/{{agentWalletId}}
+GET {{baseUrl}}/providers/{{providerId}}/dashboard
+
+Use Bearer {{adminToken}}.
+
+
+5. RANDOM POSTMAN CRUD REQUESTS
+===============================
+
+Use a unique timestamp in emails and codes where shown.
+
+
+REGISTER A RANDOM USER
+----------------------
+
+POST {{baseUrl}}/auth/register
+No authorization.
+
+{
+  "name": "Random Postman Agent",
+  "email": "random.agent.{{$timestamp}}@example.com",
+  "password": "RandomPass123!",
+  "role": "agent"
+}
+
+Copy user.id from the response before onboarding the user.
+
+
+CURRENT USER PROFILE
+--------------------
+
+GET {{baseUrl}}/auth/me
+GET {{baseUrl}}/users/me
+
+PATCH {{baseUrl}}/users/me
+
+{
+  "name": "Updated Postman Name",
+  "phone": "+8801712345678"
+}
+
+PATCH {{baseUrl}}/users/me/password
+
+{
+  "currentPassword": "RandomPass123!",
+  "newPassword": "RandomPass456!"
+}
+
+
+AREA CRUD — ADMIN
+-----------------
+
+POST {{baseUrl}}/areas
+
+{
+  "name": "Random Postman Area",
+  "code": "RND_{{$timestamp}}",
+  "status": "active"
+}
+
+GET {{baseUrl}}/areas
+GET {{baseUrl}}/areas/AREA_ID
+
+PATCH {{baseUrl}}/areas/AREA_ID
+
+{
+  "name": "Updated Random Area"
+}
+
+DELETE {{baseUrl}}/areas/AREA_ID
+
+
+PROVIDER CRUD — ADMIN
+---------------------
+
+POST {{baseUrl}}/providers
+
+{
+  "name": "Random Provider",
+  "tenantCode": "RND_{{$timestamp}}",
+  "contactName": "Random Contact",
+  "contactEmail": "provider.{{$timestamp}}@example.com",
+  "contactPhone": "+8801799999999"
+}
+
+GET {{baseUrl}}/providers?page=1&limit=20
+GET {{baseUrl}}/providers/PROVIDER_ID
+
+PATCH {{baseUrl}}/providers/PROVIDER_ID
+
+{
+  "name": "Updated Random Provider"
+}
+
+POST {{baseUrl}}/providers/PROVIDER_ID/reject
+
+{
+  "rejectionReason": "Random rejection test"
+}
+
+POST {{baseUrl}}/providers/PROVIDER_ID/approve
+
+{
+  "approvalNote": "Random approval test"
+}
+
+DELETE {{baseUrl}}/providers/PROVIDER_ID
+
+
+AGENT AND COORDINATOR ENDPOINTS
+-------------------------------
+
+POST {{baseUrl}}/agents/onboard
+Bearer {{adminToken}} or {{providerToken}}
+
+{
+  "userId": "RANDOM_AGENT_USER_ID",
+  "providerId": "{{providerId}}",
+  "areaId": "{{areaId}}",
+  "shopName": "Random Agent Shop",
+  "address": "Random Postman Address"
+}
+
+GET {{baseUrl}}/agents
+GET {{baseUrl}}/agents/AGENT_ID
+PATCH {{baseUrl}}/agents/AGENT_ID
+DELETE {{baseUrl}}/agents/AGENT_ID
+
+POST {{baseUrl}}/coordinators/onboard
+Bearer {{adminToken}}
+
+{
+  "userId": "RANDOM_COORDINATOR_USER_ID",
+  "areaId": "{{areaId}}",
+  "name": "Random Coordinator Team"
+}
+
+GET {{baseUrl}}/coordinators
+GET {{baseUrl}}/coordinators/COORDINATOR_ID
+PATCH {{baseUrl}}/coordinators/COORDINATOR_ID
+DELETE {{baseUrl}}/coordinators/COORDINATOR_ID
+
+
+COORDINATOR-PROVIDER APPROVAL
+-----------------------------
+
+POST {{baseUrl}}/providers/{{providerId}}/coordinators/{{coordinatorId}}/approve
+Bearer {{providerToken}}
+
+{
+  "approvalNote": "Coordinator approved for provider"
+}
+
+POST {{baseUrl}}/providers/{{providerId}}/coordinators/{{coordinatorId}}/reject
+
+{
+  "rejectionReason": "Coordinator relationship rejected"
+}
+
+Restore approval after testing the rejection endpoint.
+
+
+WALLET ENDPOINTS
+----------------
+
+POST {{baseUrl}}/wallets
+Bearer {{providerToken}}
+
+{
+  "ownerId": "{{agentId}}",
+  "ownerType": "AGENT",
+  "providerId": "{{providerId}}",
+  "walletType": "E_MONEY"
+}
+
+GET {{baseUrl}}/wallets?providerId={{providerId}}
+GET {{baseUrl}}/wallets/WALLET_ID
+
+PATCH {{baseUrl}}/wallets/WALLET_ID
+
+{
+  "status": "frozen"
+}
+
+POST {{baseUrl}}/wallets/WALLET_ID/fund
+Bearer {{adminToken}}
+
+{
+  "amount": 10000
+}
+
+DELETE {{baseUrl}}/wallets/WALLET_ID
+
+Deletion only succeeds when balance is zero.
+
+
+REQUEST UPDATE, CANCEL, AND DELETE
+---------------------------------
+
+PATCH {{baseUrl}}/liquidity-requests/REQUEST_ID
+
+{
+  "amount": 1200,
+  "urgency": "MEDIUM",
+  "notes": "Updated from Postman"
+}
+
+POST {{baseUrl}}/liquidity-requests/REQUEST_ID/cancel
+DELETE {{baseUrl}}/liquidity-requests/REQUEST_ID
+
+Only open requests can be updated or cancelled.
+
+
+OFFER UPDATE, WITHDRAW, AND DELETE
+---------------------------------
+
+PATCH {{baseUrl}}/liquidity-offers/OFFER_ID
+
+{
+  "availableAmount": 900,
+  "etaMinutes": 25,
+  "note": "Updated from Postman"
+}
+
+POST {{baseUrl}}/liquidity-offers/OFFER_ID/withdraw
+DELETE {{baseUrl}}/liquidity-offers/OFFER_ID
+
+Only submitted offers can be updated or withdrawn.
+
+
+PROVIDER WALLET SUPPLY
+----------------------
+
+POST {{baseUrl}}/providers/{{providerId}}/wallets/supply
+Bearer {{providerToken}}
+
+Header:
+
+Idempotency-Key: provider-supply-{{$timestamp}}
+
+{
+  "fromWalletId": "FUNDED_SOURCE_WALLET_ID",
+  "toWalletId": "{{coordinatorWalletId}}",
+  "amount": 1000,
+  "transferType": "PROVIDER_SUPPLY"
+}
+
+
+NOTIFICATIONS
+-------------
+
+POST {{baseUrl}}/notifications
+Bearer {{adminToken}}
+
+{
+  "userId": "{{agentUserId}}",
+  "type": "REQUEST_UPDATE",
+  "payload": {
+    "message": "Your request has been updated"
+  }
+}
+
+GET {{baseUrl}}/notifications
+Bearer {{agentToken}}
+
+PATCH {{baseUrl}}/notifications/NOTIFICATION_ID/read
+Bearer {{agentToken}}
+
+POST {{baseUrl}}/notifications/read-all
+Bearer {{agentToken}}
+
+
+DISPUTES
+--------
+
+POST {{baseUrl}}/disputes
+Bearer {{agentToken}}
+
+{
+  "transferId": "{{completedTransferId}}",
+  "reason": "The recipient requested a transfer verification"
+}
+
+GET {{baseUrl}}/disputes
+Bearer {{adminToken}}
+
+GET {{baseUrl}}/disputes/DISPUTE_ID
+
+POST {{baseUrl}}/disputes/DISPUTE_ID/resolve
+Bearer {{adminToken}}
+
+{
+  "resolutionType": "resolved",
+  "note": "Transfer and balances were verified"
+}
+
+
+POINTS
+------
+
+GET {{baseUrl}}/points/balance
+GET {{baseUrl}}/points/transactions
+
+POST {{baseUrl}}/points/redeem
+
+{
+  "catalogItemId": "demo-voucher",
+  "points": 100
+}
+
+The seeded users have zero earned points, so redeem intentionally returns:
+
+400 Bad Request
+"Insufficient points"
+
+
+6. COMPLETE ENDPOINT CHECKLIST
+==============================
+
+PUBLIC / PLATFORM
+  GET    /
+  GET    /status
+  GET    /platform-info
+  POST   /liquidity-check
+
+AUTH
+  POST   /auth/register
+  POST   /auth/login
+  GET    /auth/me
+
+USERS
+  GET    /users
+  GET    /users/me
+  PATCH  /users/me
+  PATCH  /users/me/password
+  GET    /users/:id
+  PATCH  /users/:id
+  DELETE /users/:id
+
+PROVIDERS
+  POST   /providers
+  GET    /providers
+  GET    /providers/:id
+  PATCH  /providers/:id
+  DELETE /providers/:id
+  POST   /providers/:id/approve
+  POST   /providers/:id/reject
+  GET    /providers/:id/agents
+  GET    /providers/:id/coordinators
+  POST   /providers/:id/coordinators/:coordinatorId/approve
+  POST   /providers/:id/coordinators/:coordinatorId/reject
+  GET    /providers/:id/shortages
+  GET    /providers/:id/dashboard
+  POST   /providers/:id/wallets/supply
+
+AREAS
+  POST   /areas
+  GET    /areas
+  GET    /areas/:id
+  PATCH  /areas/:id
+  DELETE /areas/:id
+
+AGENTS
+  POST   /agents/onboard
+  GET    /agents
+  GET    /agents/:id
+  PATCH  /agents/:id
+  DELETE /agents/:id
+
+COORDINATORS
+  POST   /coordinators/onboard
+  GET    /coordinators
+  GET    /coordinators/:id
+  PATCH  /coordinators/:id
+  DELETE /coordinators/:id
+
+WALLETS
+  POST   /wallets
+  GET    /wallets
+  GET    /wallets/:id
+  PATCH  /wallets/:id
+  POST   /wallets/:id/fund
+  DELETE /wallets/:id
+
+BALANCE SNAPSHOTS
+  POST   /balance-snapshots
+  GET    /balance-snapshots
+  GET    /balance-snapshots/:id
+  PATCH  /balance-snapshots/:id
+  DELETE /balance-snapshots/:id
+
+LIQUIDITY REQUESTS
+  POST   /liquidity-requests
+  GET    /liquidity-requests
+  GET    /liquidity-requests/:id
+  PATCH  /liquidity-requests/:id
+  POST   /liquidity-requests/:id/cancel
+  DELETE /liquidity-requests/:id
+
+LIQUIDITY OFFERS
+  POST   /liquidity-offers
+  GET    /liquidity-offers
+  GET    /liquidity-offers/:id
+  PATCH  /liquidity-offers/:id
+  POST   /liquidity-offers/:id/withdraw
+  POST   /liquidity-offers/:id/accept
+  DELETE /liquidity-offers/:id
+
+LIQUIDITY TRANSFERS
+  POST   /liquidity-transfers
+  GET    /liquidity-transfers
+  GET    /liquidity-transfers/:id
+
+POINTS
+  GET    /points/balance
+  GET    /points/transactions
+  POST   /points/redeem
+
+NOTIFICATIONS
+  POST   /notifications
+  GET    /notifications
+  PATCH  /notifications/:id/read
+  POST   /notifications/read-all
+
+DISPUTES
+  POST   /disputes
+  GET    /disputes
+  GET    /disputes/:id
+  POST   /disputes/:id/resolve
+
+
+7. EXPECTED BUSINESS-RULE ERRORS
+================================
+
+400:
+  Invalid DTO fields
+  Missing Idempotency-Key
+  Insufficient points
+  Insufficient wallet balance
+  Updating a non-open request
+  Withdrawing a non-submitted offer
+
+401:
+  Missing, invalid, or expired JWT
+
+403:
+  Correct JWT but wrong role
+
+404:
+  Unknown resource ID
+
+409:
+  Duplicate email, phone, or tenant code
+  Reused idempotency key with a different body
+  Accepting an already accepted offer
+  Deleting a wallet with a non-zero balance
+
+
+8. VERIFIED AUDIT RESULT
+========================
+
+Swagger operations discovered: 81
+
+Verified:
+  Public platform endpoints
+  Registration and all four role logins
+  JWT identity and role authorization
+  User profile and password changes
+  Provider CRUD, approval, rejection, filters, dashboard, and supply
+  Coordinator-provider approval and rejection
+  Area, agent, coordinator, and wallet CRUD
+  Wallet funding, freezing, unfreezing, and zero-balance deletion
+  Snapshot create/list/detail/update/delete
+  Request create/list/detail/update/cancel/delete
+  Offer create/list/detail/update/withdraw/accept/delete
+  Atomic transfer and transfer history
+  Notifications create/list/read/read-all
+  Disputes open/list/detail/resolve
+  Points balance/history and expected insufficient-points rejection
+
+The permanent completed flow remains available for read-only demonstrations.
