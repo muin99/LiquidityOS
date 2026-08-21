@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+/* daisyUI gives us ready-made, good-looking components like
+   "btn", "card", "input" — so we don't have to design buttons
+   and forms from scratch. We only turn on the "corporate" theme
+   to keep things simple (one clean look, no theme switcher). */
+@plugin "daisyui" {
+  themes: corporate --default;
+}
