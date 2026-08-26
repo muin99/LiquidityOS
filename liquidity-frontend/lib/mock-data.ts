@@ -7,6 +7,8 @@ export const mockAreas = [
   { id: "area-3", name: "Chittagong Port" },
 ];
 
+export const mockProviders = ["bKash", "Nagad", "Rocket"];
+
 export const mockAgentDrawer = { balance: 15250 };
 
 export const mockAgentWallets = [
