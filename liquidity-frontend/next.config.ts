@@ -7,6 +7,10 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
+  // Lets you open the dev server from another device on the same
+  // Wi-Fi (e.g. your phone) using this computer's network address,
+  // without hot-reload getting blocked.
+  allowedDevOrigins: ["192.168.0.49"],
 };
 
 export default nextConfig;
