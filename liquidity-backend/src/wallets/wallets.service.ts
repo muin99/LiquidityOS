@@ -46,8 +46,8 @@ export class WalletsService {
   }
 
   // ============================================================
-  //  CASH-IN: physical cash goes IN to the drawer's pocket,
-  //           e-cash comes OUT into the wallet.
+  //  CASH-IN: physical cash goes OUT of the drawer,
+  //           e-cash comes IN to the wallet.
   //
   //  Think of it like a swap: the agent hands over real cash,
   //  and gets e-cash credited instead.
@@ -69,6 +69,11 @@ export class WalletsService {
         drawer = safe.create(CashDrawer, { agentId, balance: 0 });
       }
 
+      // You can't hand over more physical cash than you actually have.
+      if (Number(drawer.balance) < amount) {
+        throw new BadRequestException('Not enough cash in the drawer');
+      }
+
       // Step 2: get the agent's e-cash wallet for this one provider
       let wallet = await safe.findOne(Wallet, {
         where: { agentId, providerId },
@@ -78,9 +83,9 @@ export class WalletsService {
       }
 
       // Step 3: do the swap in memory first
-      //   - add the physical cash to the drawer
-      //   - add the same amount of e-cash to the wallet
-      drawer.balance = Number(drawer.balance) + amount;
+      //   - take the physical cash out of the drawer
+      //   - put the same amount of e-cash into the wallet
+      drawer.balance = Number(drawer.balance) - amount;
       wallet.balance = Number(wallet.balance) + amount;
 
       // Step 4: save both changes. Because we're inside the transaction,
