@@ -18,14 +18,19 @@ Swagger docs: http://localhost:3000/docs
 
 ## First-time flow
 
-1. `POST /auth/register` as role `agent` or `coordinator` — account starts `pending`.
+1. `POST /auth/register` as role `agent`, `coordinator`, or `provider`
+   (a `provider` registration also needs `providerId` — the provider it
+   represents, created beforehand via admin's `POST /providers`) —
+   account starts `pending`.
 2. Someone with an `admin` account approves you: `PATCH /users/:id/approve`.
    (There's no self-signup for admin — insert the first admin row by hand,
    or temporarily allow the `admin` role in `RegisterDto` to bootstrap one.)
 3. `POST /auth/login` — get back a JWT, send it as `Authorization: Bearer <token>`.
 4. Agent: `POST /wallets/cash-in`, `POST /wallets/cash-out`, `GET /wallets/me`.
-5. Coordinator: `POST /coordinator-providers/apply`, then (as admin)
-   `PATCH /coordinator-providers/:id/decide`.
+5. Coordinator: `POST /coordinator-providers/apply`, then the **provider**
+   account decides: `GET /coordinator-providers/pending` (only their own),
+   `PATCH /coordinator-providers/:id/decide` (blocked if it's not their
+   provider — admin can decide on anyone's).
 6. Agent: `POST /ecash-requests` → Coordinator: `PATCH /ecash-requests/:id/accept`
    → `PATCH /ecash-requests/:id/fulfill`.
 

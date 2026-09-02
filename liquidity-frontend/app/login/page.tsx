@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { loginSchema } from "@/lib/validation";
+import { mockProviders } from "@/lib/mock-data";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function LoginPage() {
     email: "",
     password: "",
     role: "agent",
+    provider: mockProviders[0], // only used when role is "provider"
   });
 
   const [error, setError] = useState("");
@@ -42,7 +44,13 @@ export default function LoginPage() {
 
     // There is no backend here yet, so we just pretend the login worked
     // and send the user to the dashboard for the role they picked.
-    router.push(`/dashboard/${formData.role}`);
+    // A provider also needs to say WHICH provider they are, so that
+    // gets tacked on as a query param.
+    if (formData.role === "provider") {
+      router.push(`/dashboard/provider?provider=${formData.provider}`);
+    } else {
+      router.push(`/dashboard/${formData.role}`);
+    }
   }
 
   return (
@@ -89,9 +97,28 @@ export default function LoginPage() {
               >
                 <option value="agent">Agent</option>
                 <option value="coordinator">Coordinator</option>
+                <option value="provider">Provider</option>
                 <option value="admin">Admin</option>
               </select>
             </fieldset>
+
+            {formData.role === "provider" && (
+              <fieldset className="fieldset">
+                <label className="label">Which provider are you</label>
+                <select
+                  name="provider"
+                  value={formData.provider}
+                  onChange={handleChange}
+                  className="select w-full"
+                >
+                  {mockProviders.map((provider) => (
+                    <option key={provider} value={provider}>
+                      {provider}
+                    </option>
+                  ))}
+                </select>
+              </fieldset>
+            )}
 
             {error && <p className="text-error text-sm">{error}</p>}
 

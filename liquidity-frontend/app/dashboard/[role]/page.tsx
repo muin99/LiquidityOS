@@ -1,12 +1,14 @@
 "use client";
 
+import { Suspense } from "react";
 import { useParams } from "next/navigation";
 import AgentDashboard from "@/components/agent-dashboard";
 import CoordinatorDashboard from "@/components/coordinator-dashboard";
+import ProviderDashboard from "@/components/provider-dashboard";
 import AdminDashboard from "@/components/admin-dashboard";
 
 // These are the only role names we know how to show a dashboard for.
-const VALID_ROLES = ["agent", "coordinator", "admin"];
+const VALID_ROLES = ["agent", "coordinator", "provider", "admin"];
 
 export default function DashboardPage() {
   // useParams reads whatever is in the [role] part of the URL.
@@ -30,6 +32,11 @@ export default function DashboardPage() {
         {role === "agent" && <AgentDashboard />}
         {role === "coordinator" && <CoordinatorDashboard />}
         {role === "admin" && <AdminDashboard />}
+        {role === "provider" && (
+          <Suspense fallback={null}>
+            <ProviderDashboard />
+          </Suspense>
+        )}
       </div>
     </main>
   );

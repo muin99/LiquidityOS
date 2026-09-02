@@ -38,6 +38,7 @@ export class UsersService {
     password: string;
     role: UserRole;
     areaId?: string;
+    providerId?: string;
   }) {
     const existing = data.email
       ? await this.usersRepo.findOne({ where: { email: data.email } })
@@ -57,6 +58,7 @@ export class UsersService {
       passwordHash,
       role: data.role,
       areaId: data.areaId,
+      providerId: data.providerId,
       status: UserStatus.PENDING,
     });
 

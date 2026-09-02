@@ -1,10 +1,15 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { UserStatus } from '../common/enums/user-status.enum';
+import { UserRole } from '../common/enums/user-role.enum';
 
 @Injectable()
 export class AuthService {
@@ -16,6 +21,13 @@ export class AuthService {
   // Step 1 of the flow: sign up. Account is created but NOT active yet —
   // an admin has to approve it before this person can log in.
   async register(dto: RegisterDto) {
+    // A provider account has to say which provider it represents.
+    if (dto.role === UserRole.PROVIDER && !dto.providerId) {
+      throw new BadRequestException(
+        'providerId is required when registering as a provider',
+      );
+    }
+
     const user = await this.usersService.create({
       fullName: dto.fullName,
       email: dto.email,
@@ -23,6 +35,7 @@ export class AuthService {
       password: dto.password,
       role: dto.role,
       areaId: dto.areaId,
+      providerId: dto.providerId,
     });
 
     return {
@@ -53,7 +66,13 @@ export class AuthService {
     }
 
     // 4. everything checks out — hand back a signed token
-    const token = this.jwtService.sign({ sub: user.id, role: user.role });
+    // providerId only matters for a provider account, but it's harmless
+    // to include as undefined for everyone else.
+    const token = this.jwtService.sign({
+      sub: user.id,
+      role: user.role,
+      providerId: user.providerId,
+    });
 
     return {
       accessToken: token,
@@ -61,6 +80,7 @@ export class AuthService {
         id: user.id,
         fullName: user.fullName,
         role: user.role,
+        providerId: user.providerId,
       },
     };
   }

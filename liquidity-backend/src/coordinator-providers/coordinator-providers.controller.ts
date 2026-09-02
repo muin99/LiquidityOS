@@ -30,17 +30,24 @@ export class CoordinatorProvidersController {
     return this.service.myApplications(user.id);
   }
 
-  // An admin sees everyone still waiting for a decision.
-  @Roles(UserRole.ADMIN)
+  // A provider sees only requests to join THEM. An admin sees every
+  // pending application, for every provider.
+  @Roles(UserRole.PROVIDER, UserRole.ADMIN)
   @Get('pending')
-  pending() {
-    return this.service.pendingApplications();
+  pending(@CurrentUser() user: { role: UserRole; providerId?: string }) {
+    const providerId = user.role === UserRole.PROVIDER ? user.providerId : undefined;
+    return this.service.pendingApplications(providerId);
   }
 
-  // An admin approves or rejects one application.
-  @Roles(UserRole.ADMIN)
+  // A provider approves/rejects a request to join THEM. An admin can
+  // decide on any application, for any provider.
+  @Roles(UserRole.PROVIDER, UserRole.ADMIN)
   @Patch(':id/decide')
-  decide(@Param('id') id: string, @Body() dto: DecideApplicationDto) {
-    return this.service.decide(id, dto.status);
+  decide(
+    @Param('id') id: string,
+    @Body() dto: DecideApplicationDto,
+    @CurrentUser() user: { role: UserRole; providerId?: string },
+  ) {
+    return this.service.decide(id, dto.status, user);
   }
 }

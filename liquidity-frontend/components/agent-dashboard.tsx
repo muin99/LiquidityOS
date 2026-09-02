@@ -12,14 +12,86 @@ export default function AgentDashboard() {
     return () => clearTimeout(timer);
   }, []);
 
-  // The request list now lives in state, so a new request can be added to it.
+  // The drawer and wallets now live in state, so cash-in/cash-out can
+  // actually move money between them right here in the browser.
+  const [drawerBalance, setDrawerBalance] = useState(mockAgentDrawer.balance);
+  const [wallets, setWallets] = useState(mockAgentWallets);
   const [requests, setRequests] = useState(mockAgentRequests);
 
+  // --- cash-in / cash-out form ---
+  const [moveData, setMoveData] = useState({
+    type: "cash-in",
+    provider: mockProviders[0],
+    amount: "",
+  });
+  const [moveError, setMoveError] = useState("");
+
+  function handleMoveChange(e: any) {
+    const { name, value } = e.target;
+    setMoveData({
+      ...moveData,
+      [name]: value,
+    });
+  }
+
+  function handleMoveSubmit(e: any) {
+    e.preventDefault();
+
+    const amount = Number(moveData.amount);
+
+    if (!moveData.amount || amount <= 0) {
+      setMoveError("Please enter an amount greater than 0");
+      return;
+    }
+
+    // Find this provider's wallet — the agent might not have one yet.
+    const wallet = wallets.find((w) => w.provider === moveData.provider);
+    const walletBalance = wallet ? wallet.balance : 0;
+
+    if (moveData.type === "cash-in") {
+      // Cash-in: physical cash goes OUT of the drawer, e-cash comes IN to the wallet.
+      if (amount > drawerBalance) {
+        setMoveError("Not enough cash in the drawer");
+        return;
+      }
+
+      setDrawerBalance(drawerBalance - amount);
+      updateWalletBalance(moveData.provider, walletBalance + amount);
+    } else {
+      // Cash-out: e-cash goes OUT of the wallet, physical cash comes IN to the drawer.
+      if (amount > walletBalance) {
+        setMoveError("Not enough e-cash in this wallet");
+        return;
+      }
+
+      updateWalletBalance(moveData.provider, walletBalance - amount);
+      setDrawerBalance(drawerBalance + amount);
+    }
+
+    setMoveError("");
+    setMoveData({ ...moveData, amount: "" });
+  }
+
+  // Update one wallet's balance, adding the wallet if it didn't exist yet.
+  function updateWalletBalance(provider: string, newBalance: number) {
+    const alreadyExists = wallets.some((w) => w.provider === provider);
+
+    if (alreadyExists) {
+      setWallets(
+        wallets.map((w) =>
+          w.provider === provider ? { ...w, balance: newBalance } : w,
+        ),
+      );
+    } else {
+      setWallets([...wallets, { provider, balance: newBalance }]);
+    }
+  }
+
+  // --- e-cash request form ---
   const [formData, setFormData] = useState({
     provider: mockProviders[0],
     amount: "",
   });
-
   const [error, setError] = useState("");
 
   function handleChange(e: any) {
@@ -67,7 +139,7 @@ export default function AgentDashboard() {
       <div className="stats shadow w-full">
         <div className="stat">
           <div className="stat-title">Cash drawer</div>
-          <div className="stat-value">৳{mockAgentDrawer.balance}</div>
+          <div className="stat-value">৳{drawerBalance}</div>
           <div className="stat-desc">Physical cash on hand</div>
         </div>
       </div>
@@ -75,7 +147,7 @@ export default function AgentDashboard() {
       <div>
         <h2 className="text-lg font-semibold mb-3">E-cash wallets</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {mockAgentWallets.map((wallet) => (
+          {wallets.map((wallet) => (
             <div key={wallet.provider} className="card bg-base-100 shadow">
               <div className="card-body">
                 <h3 className="card-title text-base">{wallet.provider}</h3>
@@ -83,6 +155,65 @@ export default function AgentDashboard() {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      <div className="card bg-base-100 shadow">
+        <div className="card-body">
+          <h2 className="card-title text-lg">Cash in / Cash out</h2>
+          <p className="text-sm text-base-content/60">
+            Cash-in moves money from your drawer into e-cash. Cash-out
+            moves it back the other way.
+          </p>
+
+          <form onSubmit={handleMoveSubmit} className="flex flex-col sm:flex-row gap-3 mt-2 items-start">
+            <fieldset className="fieldset w-full sm:w-36">
+              <label className="label">Type</label>
+              <select
+                name="type"
+                value={moveData.type}
+                onChange={handleMoveChange}
+                className="select w-full"
+              >
+                <option value="cash-in">Cash in</option>
+                <option value="cash-out">Cash out</option>
+              </select>
+            </fieldset>
+
+            <fieldset className="fieldset w-full sm:w-40">
+              <label className="label">Provider</label>
+              <select
+                name="provider"
+                value={moveData.provider}
+                onChange={handleMoveChange}
+                className="select w-full"
+              >
+                {mockProviders.map((provider) => (
+                  <option key={provider} value={provider}>
+                    {provider}
+                  </option>
+                ))}
+              </select>
+            </fieldset>
+
+            <fieldset className="fieldset w-full sm:w-40">
+              <label className="label">Amount</label>
+              <input
+                type="number"
+                name="amount"
+                value={moveData.amount}
+                onChange={handleMoveChange}
+                placeholder="1000"
+                className="input w-full"
+              />
+            </fieldset>
+
+            <button type="submit" className="btn btn-primary sm:mt-6">
+              Confirm
+            </button>
+          </form>
+
+          {moveError && <p className="text-error text-sm mt-1">{moveError}</p>}
         </div>
       </div>
 

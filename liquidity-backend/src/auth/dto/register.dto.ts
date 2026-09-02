@@ -30,14 +30,22 @@ export class RegisterDto {
   @MinLength(6)
   password: string;
 
-  // Only "agent" or "coordinator" can self-register.
   // Nobody can sign themselves up as admin — an admin has to be made by hand.
-  @ApiProperty({ enum: [UserRole.AGENT, UserRole.COORDINATOR] })
-  @IsEnum([UserRole.AGENT, UserRole.COORDINATOR])
-  role: UserRole.AGENT | UserRole.COORDINATOR;
+  @ApiProperty({
+    enum: [UserRole.AGENT, UserRole.COORDINATOR, UserRole.PROVIDER],
+  })
+  @IsEnum([UserRole.AGENT, UserRole.COORDINATOR, UserRole.PROVIDER])
+  role: UserRole.AGENT | UserRole.COORDINATOR | UserRole.PROVIDER;
 
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
   areaId?: string;
+
+  // Required when role is "provider" — which provider this account
+  // is allowed to manage. Ignored for every other role.
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  providerId?: string;
 }
