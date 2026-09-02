@@ -1,8 +1,14 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CoordinatorProvider } from './coordinator-provider.entity';
 import { ApplicationStatus } from '../common/enums/application-status.enum';
+import { UserRole } from '../common/enums/user-role.enum';
 
 @Injectable()
 export class CoordinatorProvidersService {
@@ -32,7 +38,14 @@ export class CoordinatorProvidersService {
     return this.repo.find({ where: { coordinatorId } });
   }
 
-  pendingApplications() {
+  // A provider only sees applications sent to THEM. An admin (no
+  // providerId passed in) sees everyone waiting, for every provider.
+  pendingApplications(providerId?: string) {
+    if (providerId) {
+      return this.repo.find({
+        where: { status: ApplicationStatus.PENDING, providerId },
+      });
+    }
     return this.repo.find({ where: { status: ApplicationStatus.PENDING } });
   }
 
@@ -40,10 +53,22 @@ export class CoordinatorProvidersService {
   async decide(
     id: string,
     status: ApplicationStatus.APPROVED | ApplicationStatus.REJECTED,
+    requester: { role: UserRole; providerId?: string },
   ) {
     const application = await this.repo.findOne({ where: { id } });
     if (!application) {
       throw new NotFoundException('Application not found');
+    }
+
+    // A provider can only decide on applications sent to their OWN
+    // provider — not anyone else's. An admin can decide on any of them.
+    if (
+      requester.role === UserRole.PROVIDER &&
+      application.providerId !== requester.providerId
+    ) {
+      throw new ForbiddenException(
+        'This application was not sent to your provider',
+      );
     }
 
     application.status = status;

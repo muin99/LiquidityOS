@@ -36,6 +36,7 @@ export const mockAdminPendingUsers = [
   { id: "user-1", name: "Karim Ahmed", role: "agent" },
   { id: "user-2", name: "Fatima Begum", role: "coordinator" },
   { id: "user-3", name: "Jasim Uddin", role: "agent" },
+  { id: "user-4", name: "Rocket Financial Services", role: "provider" },
 ];
 
 export const mockAdminPendingApplications = [

@@ -16,8 +16,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { sub: string; role: string }) {
+  async validate(payload: { sub: string; role: string; providerId?: string }) {
     // "payload" is exactly what we put inside the token when we logged the user in.
-    return { id: payload.sub, role: payload.role };
+    return { id: payload.sub, role: payload.role, providerId: payload.providerId };
   }
 }
