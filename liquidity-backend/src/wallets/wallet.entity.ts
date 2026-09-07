@@ -16,16 +16,24 @@ import { Provider } from '../providers/provider.entity';
 // The agent can never edit "balance" directly, only through cash_transactions.
 @Entity('wallets')
 @Unique(['agentId', 'providerId'])
+@Unique(['coordinatorId', 'providerId'])
 export class Wallet {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
-  agentId: string;
+  @Column({ nullable: true })
+  agentId?: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'agentId' })
   agent: User;
+
+  @Column({ nullable: true })
+  coordinatorId?: string;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'coordinatorId' })
+  coordinator: User;
 
   @Column()
   providerId: string;

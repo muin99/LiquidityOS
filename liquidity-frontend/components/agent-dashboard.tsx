@@ -153,6 +153,16 @@ export default function AgentDashboard() {
     }
   }
 
+  async function cancelRequest(id: string) {
+    try {
+      await axios.patch(`/api/ecash-requests/${id}/cancel`, {}, authHeader);
+      await loadRequests();
+      setError("");
+    } catch (err) {
+      setError("This request can no longer be cancelled");
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center py-24">
@@ -365,6 +375,7 @@ export default function AgentDashboard() {
                   <th>Amount</th>
                   <th>Type</th>
                   <th>Status</th>
+                  <th></th>
                   <th>Requested</th>
                   <th>Fulfilled</th>
                 </tr>
@@ -375,11 +386,21 @@ export default function AgentDashboard() {
                     <td>{req.provider.name}</td>
                     <td>৳{req.amount}</td>
                     <td>{req.type === "physical_cash" ? "Physical cash" : "E-cash"}</td>
-                    <td>
-                      <span className={`badge ${statusBadgeClass(req.status)} capitalize`}>
-                        {req.status}
-                      </span>
-                    </td>
+                  <td>
+                    <span className={`badge ${statusBadgeClass(req.status)} capitalize`}>
+                      {req.status}
+                    </span>
+                  </td>
+                  <td>
+                    {req.status === "pending" && (
+                      <button
+                        onClick={() => cancelRequest(req.id)}
+                        className="btn btn-ghost btn-error btn-sm"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </td>
                     <td>{new Date(req.requestedAt).toLocaleString()}</td>
                     <td>{req.fulfilledAt ? new Date(req.fulfilledAt).toLocaleString() : "—"}</td>
                   </tr>

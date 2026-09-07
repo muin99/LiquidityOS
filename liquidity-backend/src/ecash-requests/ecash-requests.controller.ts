@@ -29,6 +29,18 @@ export class EcashRequestsController {
     return this.service.myRequests(user.id);
   }
 
+  @Roles(UserRole.PROVIDER)
+  @Get('provider-history')
+  providerHistory(@CurrentUser() user: { providerId?: string }) {
+    return this.service.providerRequests(user.providerId as string);
+  }
+
+  @Roles(UserRole.AGENT)
+  @Patch(':id/cancel')
+  cancel(@Param('id') id: string, @CurrentUser() user: { id: string }) {
+    return this.service.cancel(id, user.id);
+  }
+
   // Coordinator: see everyone who's asking for e-cash, for the
   // providers I'm actually approved to help with
   @Roles(UserRole.COORDINATOR)
