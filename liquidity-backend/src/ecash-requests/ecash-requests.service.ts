@@ -8,9 +8,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
 import { EcashRequest } from './ecash-request.entity';
 import { Wallet } from '../wallets/wallet.entity';
+import { CashDrawer } from '../wallets/cash-drawer.entity';
 import { CoordinatorProvider } from '../coordinator-providers/coordinator-provider.entity';
 import { RequestStatus } from '../common/enums/request-status.enum';
 import { ApplicationStatus } from '../common/enums/application-status.enum';
+import { RequestType } from '../common/enums/request-type.enum';
 
 @Injectable()
 export class EcashRequestsService {
@@ -23,11 +25,17 @@ export class EcashRequestsService {
   ) {}
 
   // Step 1: an agent whose wallet is running low asks for a top-up.
-  create(agentId: string, providerId: string, amount: number) {
+  create(
+    agentId: string,
+    providerId: string,
+    amount: number,
+    type: RequestType,
+  ) {
     const request = this.requestsRepo.create({
       agentId,
       providerId,
       amount,
+      type,
       status: RequestStatus.PENDING,
     });
     return this.requestsRepo.save(request);
@@ -105,28 +113,41 @@ export class EcashRequestsService {
         throw new BadRequestException('This request must be accepted first');
       }
 
-      // find (or make) the agent's e-cash wallet for this provider
-      let wallet = await safe.findOne(Wallet, {
-        where: { agentId: request.agentId, providerId: request.providerId },
-      });
-      if (!wallet) {
-        wallet = safe.create(Wallet, {
-          agentId: request.agentId,
-          providerId: request.providerId,
-          balance: 0,
+      if (request.type === RequestType.E_CASH) {
+        let wallet = await safe.findOne(Wallet, {
+          where: { agentId: request.agentId, providerId: request.providerId },
         });
-      }
+        if (!wallet) {
+          wallet = safe.create(Wallet, {
+            agentId: request.agentId,
+            providerId: request.providerId,
+            balance: 0,
+          });
+        }
 
-      // top up the wallet by the requested amount
-      wallet.balance = Number(wallet.balance) + Number(request.amount);
-      await safe.save(wallet);
+        wallet.balance = Number(wallet.balance) + Number(request.amount);
+        await safe.save(wallet);
+      } else {
+        let drawer = await safe.findOne(CashDrawer, {
+          where: { agentId: request.agentId },
+        });
+        if (!drawer) {
+          drawer = safe.create(CashDrawer, {
+            agentId: request.agentId,
+            balance: 0,
+          });
+        }
+
+        drawer.balance = Number(drawer.balance) + Number(request.amount);
+        await safe.save(drawer);
+      }
 
       // mark the request as done
       request.status = RequestStatus.FULFILLED;
       request.fulfilledAt = new Date();
       await safe.save(request);
 
-      return { request, wallet };
+      return { request };
     });
   }
 }

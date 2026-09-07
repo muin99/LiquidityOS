@@ -35,11 +35,18 @@ export default function RegisterPage() {
   // areas and providers, so the dropdowns below have real options.
   useEffect(() => {
     async function getData() {
-      const areasResponse = await axios.get("/api/areas");
-      setAreas(areasResponse.data);
-
-      const providersResponse = await axios.get("/api/providers");
-      setProviders(providersResponse.data);
+      try {
+        const [areasResponse, providersResponse] = await Promise.all([
+          axios.get("/api/areas"),
+          axios.get("/api/providers"),
+        ]);
+        setAreas(areasResponse.data);
+        setProviders(providersResponse.data);
+      } catch {
+        setError(
+          "Registration options could not be loaded. Make sure the backend is running.",
+        );
+      }
     }
 
     getData();
@@ -91,11 +98,6 @@ export default function RegisterPage() {
       setError("Please pick which provider you are");
       return;
     }
-    if (formData.role !== "provider" && !formData.areaId) {
-      setError("Please pick your area");
-      return;
-    }
-
     setError("");
     setSubmitting(true);
 
@@ -113,7 +115,16 @@ export default function RegisterPage() {
       setSuccessMessage(response.data.message);
       setSubmitted(true);
     } catch (err) {
-      setError("Something went wrong, please try again");
+      if (axios.isAxiosError(err)) {
+        const message = err.response?.data?.message;
+        setError(
+          Array.isArray(message)
+            ? message.join(", ")
+            : message || "Something went wrong, please try again",
+        );
+      } else {
+        setError("Something went wrong, please try again");
+      }
       setSubmitting(false);
     }
   }

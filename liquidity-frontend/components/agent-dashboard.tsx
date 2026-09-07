@@ -109,6 +109,7 @@ export default function AgentDashboard() {
   const [formData, setFormData] = useState({
     providerId: "",
     amount: "",
+    type: "e_cash",
   });
   const [error, setError] = useState("");
 
@@ -136,13 +137,17 @@ export default function AgentDashboard() {
     try {
       await axios.post(
         "/api/ecash-requests",
-        { providerId: formData.providerId, amount: Number(formData.amount) },
+        {
+          providerId: formData.providerId,
+          amount: Number(formData.amount),
+          type: formData.type,
+        },
         authHeader,
       );
 
       await loadRequests();
       setError("");
-      setFormData({ providerId: "", amount: "" });
+      setFormData({ providerId: "", amount: "", type: "e_cash" });
     } catch (err) {
       setError("Something went wrong, please try again");
     }
@@ -290,13 +295,26 @@ export default function AgentDashboard() {
         </div>
       </TitleCard>
 
-      <TitleCard title="Request e-cash">
+      <TitleCard title="Request liquidity">
         <div>
           <p className="text-sm text-base-content/60">
-            Running low on a wallet? Ask a coordinator to top it up.
+            Choose whether you need e-cash or physical cash.
           </p>
 
           <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 mt-2 items-start">
+            <fieldset className="fieldset w-full sm:w-40">
+              <label className="label">I need</label>
+              <select
+                name="type"
+                value={formData.type}
+                onChange={handleChange}
+                className="select w-full"
+              >
+                <option value="e_cash">E-cash</option>
+                <option value="physical_cash">Physical cash</option>
+              </select>
+            </fieldset>
+
             <fieldset className="fieldset w-full sm:w-40">
               <label className="label">Provider</label>
               <select
@@ -335,7 +353,7 @@ export default function AgentDashboard() {
         </div>
       </TitleCard>
 
-      <TitleCard title="My e-cash requests">
+      <TitleCard title="My liquidity requests">
         {requests.length === 0 ? (
           <p className="text-base-content/60">You haven't asked for e-cash yet.</p>
         ) : (
@@ -345,6 +363,7 @@ export default function AgentDashboard() {
                 <tr>
                   <th>Provider</th>
                   <th>Amount</th>
+                  <th>Type</th>
                   <th>Status</th>
                   <th>Requested</th>
                   <th>Fulfilled</th>
@@ -355,6 +374,7 @@ export default function AgentDashboard() {
                   <tr key={req.id}>
                     <td>{req.provider.name}</td>
                     <td>৳{req.amount}</td>
+                    <td>{req.type === "physical_cash" ? "Physical cash" : "E-cash"}</td>
                     <td>
                       <span className={`badge ${statusBadgeClass(req.status)} capitalize`}>
                         {req.status}

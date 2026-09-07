@@ -9,6 +9,7 @@ import {
 import { User } from '../users/user.entity';
 import { Provider } from '../providers/provider.entity';
 import { RequestStatus } from '../common/enums/request-status.enum';
+import { RequestType } from '../common/enums/request-type.enum';
 
 // An agent's SOS: "my e-cash wallet is running low, please top me up".
 // coordinatorId stays empty until someone picks up the request.
@@ -40,6 +41,13 @@ export class EcashRequest {
 
   @Column({ type: 'numeric', precision: 14, scale: 2 })
   amount: number;
+
+  @Column({
+    type: 'enum',
+    enum: RequestType,
+    default: RequestType.E_CASH,
+  })
+  type: RequestType;
 
   @Column({
     type: 'enum',
