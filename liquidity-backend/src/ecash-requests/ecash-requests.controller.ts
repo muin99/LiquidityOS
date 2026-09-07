@@ -22,11 +22,19 @@ export class EcashRequestsController {
     return this.service.create(user.id, dto.providerId, dto.amount);
   }
 
-  // Coordinator: see everyone who's asking for e-cash right now
+  // Agent: check on the requests I made before
+  @Roles(UserRole.AGENT)
+  @Get('mine')
+  mine(@CurrentUser() user: { id: string }) {
+    return this.service.myRequests(user.id);
+  }
+
+  // Coordinator: see everyone who's asking for e-cash, for the
+  // providers I'm actually approved to help with
   @Roles(UserRole.COORDINATOR)
   @Get('pending')
-  pending() {
-    return this.service.pendingRequests();
+  pending(@CurrentUser() user: { id: string }) {
+    return this.service.pendingRequests(user.id);
   }
 
   // Coordinator: "I'll handle this one"
