@@ -8,6 +8,14 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // The frontend lives on a different port (its our own little
+  // proxy setup), so the browser blocks it by default. This line
+  // tells the browser "no its fine, this origin is allowed to call us".
+  const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3001')
+    .split(',')
+    .map((origin) => origin.trim());
+  app.enableCors({ origin: corsOrigins });
+
   // Reject any request body that has fields we didn't ask for,
   // and auto-convert types (e.g. "10" -> 10) based on our DTOs.
   app.useGlobalPipes(
