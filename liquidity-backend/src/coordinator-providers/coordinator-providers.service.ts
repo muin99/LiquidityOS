@@ -41,6 +41,14 @@ export class CoordinatorProvidersService {
     });
   }
 
+  // A provider sees the coordinators already approved for its network.
+  approvedApplications(providerId: string) {
+    return this.repo.find({
+      where: { providerId, status: ApplicationStatus.APPROVED },
+      relations: ['coordinator'],
+    });
+  }
+
   // A provider only sees applications sent to THEM. An admin (no
   // providerId passed in) sees everyone waiting, for every provider.
   pendingApplications(providerId?: string) {

@@ -18,12 +18,22 @@ export class CashTransaction {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
-  agentId: string;
+  @Column({ nullable: true })
+  agentId?: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'agentId' })
   agent: User;
+
+  @Column({ nullable: true })
+  coordinatorId?: string;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'coordinatorId' })
+  coordinator: User;
+
+  @Column({ nullable: true })
+  requestId?: string;
 
   @Column()
   providerId: string;
