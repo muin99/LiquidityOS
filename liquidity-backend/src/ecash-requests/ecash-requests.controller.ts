@@ -19,7 +19,7 @@ export class EcashRequestsController {
   @Roles(UserRole.AGENT)
   @Post()
   create(@CurrentUser() user: { id: string }, @Body() dto: CreateEcashRequestDto) {
-    return this.service.create(user.id, dto.providerId, dto.amount);
+    return this.service.create(user.id, dto.providerId, dto.amount, dto.type);
   }
 
   // Agent: check on the requests I made before
