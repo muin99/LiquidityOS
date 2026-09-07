@@ -12,9 +12,8 @@ import { UserRole } from '../common/enums/user-role.enum';
 export class ProvidersController {
   constructor(private providersService: ProvidersService) {}
 
-  // Anyone logged in can see which providers exist.
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  // Anyone (even before logging in) can see which providers exist,
+  // because you need the list to pick one while registering.
   @Get()
   findAll() {
     return this.providersService.findAll();
