@@ -49,16 +49,7 @@ export default function AgentDashboard() {
     const walletBalance = wallet ? wallet.balance : 0;
 
     if (moveData.type === "cash-in") {
-      // Cash-in: physical cash goes OUT of the drawer, e-cash comes IN to the wallet.
-      if (amount > drawerBalance) {
-        setMoveError("Not enough cash in the drawer");
-        return;
-      }
-
-      setDrawerBalance(drawerBalance - amount);
-      updateWalletBalance(moveData.provider, walletBalance + amount);
-    } else {
-      // Cash-out: e-cash goes OUT of the wallet, physical cash comes IN to the drawer.
+      // Cash-in: e-cash goes OUT of the wallet, physical cash comes IN to the drawer.
       if (amount > walletBalance) {
         setMoveError("Not enough e-cash in this wallet");
         return;
@@ -66,6 +57,15 @@ export default function AgentDashboard() {
 
       updateWalletBalance(moveData.provider, walletBalance - amount);
       setDrawerBalance(drawerBalance + amount);
+    } else {
+      // Cash-out: physical cash goes OUT of the drawer, e-cash comes IN to the wallet.
+      if (amount > drawerBalance) {
+        setMoveError("Not enough cash in the drawer");
+        return;
+      }
+
+      setDrawerBalance(drawerBalance - amount);
+      updateWalletBalance(moveData.provider, walletBalance + amount);
     }
 
     setMoveError("");
@@ -162,7 +162,7 @@ export default function AgentDashboard() {
         <div className="card-body">
           <h2 className="card-title text-lg">Cash in / Cash out</h2>
           <p className="text-sm text-base-content/60">
-            Cash-in moves money from your drawer into e-cash. Cash-out
+            Cash-in moves money from e-cash into your drawer. Cash-out
             moves it back the other way.
           </p>
 
