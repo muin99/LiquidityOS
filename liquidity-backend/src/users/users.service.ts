@@ -66,7 +66,10 @@ export class UsersService {
   }
 
   async listPending() {
-    return this.usersRepo.find({ where: { status: UserStatus.PENDING } });
+    return this.usersRepo.find({
+      where: { status: UserStatus.PENDING },
+      relations: ['area', 'provider'],
+    });
   }
 
   // Admin-only action: turn a pending account into an active one.

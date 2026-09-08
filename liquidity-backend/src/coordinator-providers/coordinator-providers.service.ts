@@ -35,7 +35,10 @@ export class CoordinatorProvidersService {
   }
 
   myApplications(coordinatorId: string) {
-    return this.repo.find({ where: { coordinatorId } });
+    return this.repo.find({
+      where: { coordinatorId },
+      relations: ['provider'],
+    });
   }
 
   // A provider only sees applications sent to THEM. An admin (no
@@ -44,9 +47,13 @@ export class CoordinatorProvidersService {
     if (providerId) {
       return this.repo.find({
         where: { status: ApplicationStatus.PENDING, providerId },
+        relations: ['coordinator', 'provider'],
       });
     }
-    return this.repo.find({ where: { status: ApplicationStatus.PENDING } });
+    return this.repo.find({
+      where: { status: ApplicationStatus.PENDING },
+      relations: ['coordinator', 'provider'],
+    });
   }
 
   // The provider (or admin) says yes/no to a pending application.
