@@ -4,6 +4,7 @@ import { CashDrawer } from './cash-drawer.entity';
 import { Wallet } from './wallet.entity';
 import { CashTransaction } from './cash-transaction.entity';
 import { CoordinatorProvider } from '../coordinator-providers/coordinator-provider.entity';
+import { AgentProvider } from '../agent-providers/agent-provider.entity';
 import { WalletsService } from './wallets.service';
 import { WalletsController } from './wallets.controller';
 
@@ -14,6 +15,7 @@ import { WalletsController } from './wallets.controller';
       Wallet,
       CashTransaction,
       CoordinatorProvider,
+      AgentProvider,
     ]),
   ],
   controllers: [WalletsController],
