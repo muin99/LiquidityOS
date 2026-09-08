@@ -8,6 +8,7 @@ import TitleCard from "@/components/title-card";
 export default function ProviderDashboard() {
   const [loading, setLoading] = useState(true);
   const [applications, setApplications] = useState<any[]>([]);
+  const [agentApplications, setAgentApplications] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [coordinators, setCoordinators] = useState<any[]>([]);
@@ -24,6 +25,11 @@ export default function ProviderDashboard() {
   async function loadApplications() {
     const response = await axios.get("/api/coordinator-providers/pending", authHeader);
     setApplications(response.data);
+  }
+
+  async function loadAgentApplications() {
+    const response = await axios.get("/api/agent-providers/pending", authHeader);
+    setAgentApplications(response.data);
   }
 
   async function loadLogs() {
@@ -51,6 +57,7 @@ export default function ProviderDashboard() {
       const user = JSON.parse(localStorage.getItem("user") || "{}");
 
       await loadApplications();
+      await loadAgentApplications();
       await loadLogs();
       await loadCoordinators();
 
@@ -72,6 +79,16 @@ export default function ProviderDashboard() {
       await loadApplications();
       await loadLogs();
       await loadCoordinators();
+      setActionError("");
+    } catch (err) {
+      setActionError("Something went wrong, please try again");
+    }
+  }
+
+  async function decideAgent(id: string, status: "approved" | "rejected") {
+    try {
+      await axios.patch(`/api/agent-providers/${id}/decide`, { status }, authHeader);
+      await loadAgentApplications();
       setActionError("");
     } catch (err) {
       setActionError("Something went wrong, please try again");
@@ -152,6 +169,10 @@ export default function ProviderDashboard() {
           </div>
           <div className="stat-title">Coordinator join requests</div>
           <div className="stat-value">{applications.length}</div>
+        </div>
+        <div className="stat">
+          <div className="stat-title">Agent join requests</div>
+          <div className="stat-value">{agentApplications.length}</div>
         </div>
         <div className="stat">
           <div className="stat-title">Open liquidity requests</div>
@@ -256,6 +277,29 @@ export default function ProviderDashboard() {
       </div>
 
       {moneyError && <p className="text-error text-sm">{moneyError}</p>}
+
+      <TitleCard title="Agent join requests">
+        {agentApplications.length === 0 ? (
+          <p className="text-base-content/60">Nothing waiting for a decision.</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {agentApplications.map((application) => (
+              <div key={application.id} className="flex items-center justify-between bg-base-100 border border-base-300 px-4 py-3 rounded-box">
+                <div>
+                  <p className="font-medium">{application.agent.fullName}</p>
+                  <p className="text-xs text-base-content/50">
+                    Applied {new Date(application.appliedAt).toLocaleString()}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => decideAgent(application.id, "approved")} className="btn btn-success btn-sm">Approve</button>
+                  <button onClick={() => decideAgent(application.id, "rejected")} className="btn btn-ghost btn-sm">Reject</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </TitleCard>
 
       <TitleCard title="Coordinator join requests">
         {applications.length === 0 ? (

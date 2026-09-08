@@ -14,6 +14,7 @@ import { Wallet } from './wallets/wallet.entity';
 import { User } from './users/user.entity';
 import { CoordinatorProvider } from './coordinator-providers/coordinator-provider.entity';
 import { ApplicationStatus } from './common/enums/application-status.enum';
+import { AgentProvider } from './agent-providers/agent-provider.entity';
 
 const demoPassword = 'DemoPass123!';
 
@@ -55,6 +56,9 @@ async function seed() {
   const usersRepo = app.get<Repository<User>>(getRepositoryToken(User));
   const coordinatorProvidersRepo = app.get<Repository<CoordinatorProvider>>(
     getRepositoryToken(CoordinatorProvider),
+  );
+  const agentProvidersRepo = app.get<Repository<AgentProvider>>(
+    getRepositoryToken(AgentProvider),
   );
   const walletsRepo = app.get<Repository<Wallet>>(getRepositoryToken(Wallet));
   const cashDrawersRepo = app.get<Repository<CashDrawer>>(
@@ -116,6 +120,18 @@ async function seed() {
         status: ApplicationStatus.APPROVED,
       });
       await coordinatorProvidersRepo.save(coordinatorProvider);
+    }
+
+    let agentProvider = await agentProvidersRepo.findOne({
+      where: { agentId: agent.id, providerId: provider.id },
+    });
+    if (!agentProvider) {
+      agentProvider = agentProvidersRepo.create({
+        agentId: agent.id,
+        providerId: provider.id,
+        status: ApplicationStatus.APPROVED,
+      });
+      await agentProvidersRepo.save(agentProvider);
     }
 
     let wallet = await walletsRepo.findOne({

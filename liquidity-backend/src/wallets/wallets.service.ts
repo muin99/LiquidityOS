@@ -8,6 +8,7 @@ import { TransactionType } from '../common/enums/transaction-type.enum';
 import { CoordinatorProvider } from '../coordinator-providers/coordinator-provider.entity';
 import { ApplicationStatus } from '../common/enums/application-status.enum';
 import { RequestType } from '../common/enums/request-type.enum';
+import { AgentProvider } from '../agent-providers/agent-provider.entity';
 
 @Injectable()
 export class WalletsService {
@@ -20,6 +21,8 @@ export class WalletsService {
     private cashTransactionsRepo: Repository<CashTransaction>,
     @InjectRepository(CoordinatorProvider)
     private coordinatorProvidersRepo: Repository<CoordinatorProvider>,
+    @InjectRepository(AgentProvider)
+    private agentProvidersRepo: Repository<AgentProvider>,
     // dataSource is what lets us do a "transaction" — see below.
     private dataSource: DataSource,
   ) {}
@@ -48,6 +51,27 @@ export class WalletsService {
 
   async myWallets(agentId: string) {
     const drawer = await this.getOrCreateDrawer(agentId);
+    const approvedProviders = await this.agentProvidersRepo.find({
+      where: { agentId, status: ApplicationStatus.APPROVED },
+    });
+
+    // An approved provider should show up right away, even before the
+    // agent has received any e-cash from that provider.
+    for (const application of approvedProviders) {
+      const wallet = await this.walletsRepo.findOne({
+        where: { agentId, providerId: application.providerId },
+      });
+      if (!wallet) {
+        await this.walletsRepo.save(
+          this.walletsRepo.create({
+            agentId,
+            providerId: application.providerId,
+            balance: 0,
+          }),
+        );
+      }
+    }
+
     // loading the "provider" relation too, so the frontend can show a
     // name like "bKash" instead of just a providerId uuid
     const wallets = await this.walletsRepo.find({
@@ -266,6 +290,7 @@ export class WalletsService {
   //  topped up).
   // ============================================================
   async cashIn(agentId: string, providerId: string, amount: number) {
+    await this.checkAgentProvider(agentId, providerId);
     // dataSource.transaction() opens the magic box for us.
     // "safe" below is our special toolbox to use ONLY inside this box.
     return this.dataSource.transaction(async (safe) => {
@@ -323,6 +348,7 @@ export class WalletsService {
   //  IN to the wallet. Same magic-box idea as cashIn above.
   // ============================================================
   async cashOut(agentId: string, providerId: string, amount: number) {
+    await this.checkAgentProvider(agentId, providerId);
     return this.dataSource.transaction(async (safe) => {
       // The agent must already have a drawer (they'd have made one by
       // cashing in before), but just in case, create an empty one.
@@ -363,5 +389,14 @@ export class WalletsService {
 
       return { drawer, wallet, transaction: entry };
     });
+  }
+
+  private async checkAgentProvider(agentId: string, providerId: string) {
+    const approved = await this.agentProvidersRepo.findOne({
+      where: { agentId, providerId, status: ApplicationStatus.APPROVED },
+    });
+    if (!approved) {
+      throw new BadRequestException('You are not approved to work with this provider');
+    }
   }
 }

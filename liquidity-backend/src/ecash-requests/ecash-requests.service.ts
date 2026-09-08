@@ -15,6 +15,7 @@ import { RequestStatus } from '../common/enums/request-status.enum';
 import { ApplicationStatus } from '../common/enums/application-status.enum';
 import { RequestType } from '../common/enums/request-type.enum';
 import { TransactionType } from '../common/enums/transaction-type.enum';
+import { AgentProvider } from '../agent-providers/agent-provider.entity';
 
 @Injectable()
 export class EcashRequestsService {
@@ -23,16 +24,25 @@ export class EcashRequestsService {
     private requestsRepo: Repository<EcashRequest>,
     @InjectRepository(CoordinatorProvider)
     private coordinatorProvidersRepo: Repository<CoordinatorProvider>,
+    @InjectRepository(AgentProvider)
+    private agentProvidersRepo: Repository<AgentProvider>,
     private dataSource: DataSource,
   ) {}
 
   // Step 1: an agent whose wallet is running low asks for a top-up.
-  create(
+  async create(
     agentId: string,
     providerId: string,
     amount: number,
     type: RequestType,
   ) {
+    const approved = await this.agentProvidersRepo.findOne({
+      where: { agentId, providerId, status: ApplicationStatus.APPROVED },
+    });
+    if (!approved) {
+      throw new ForbiddenException('You are not approved to work with this provider');
+    }
+
     const request = this.requestsRepo.create({
       agentId,
       providerId,
