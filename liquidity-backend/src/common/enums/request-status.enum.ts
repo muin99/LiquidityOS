@@ -4,4 +4,5 @@ export enum RequestStatus {
   ACCEPTED = 'accepted', // a coordinator said "I'll handle this"
   FULFILLED = 'fulfilled', // the coordinator actually sent the e-cash
   CANCELLED = 'cancelled',
+  REJECTED = 'rejected',
 }
