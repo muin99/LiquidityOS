@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, IsNull, Repository } from 'typeorm';
+import { DataSource, In, IsNull, Repository } from 'typeorm';
 import { CashDrawer } from './cash-drawer.entity';
 import { Wallet } from './wallet.entity';
 import { CashTransaction } from './cash-transaction.entity';
@@ -97,6 +97,65 @@ export class WalletsService {
     return this.cashTransactionsRepo.find({
       where: { providerId, type: TransactionType.LIQUIDITY_SWAP },
       relations: ['agent', 'coordinator'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  // Provider reserve top-ups and supplies, kept separate from agent swaps.
+  providerReserveHistory(providerId: string) {
+    return this.cashTransactionsRepo.find({
+      where: {
+        providerId,
+        type: In([
+          TransactionType.PROVIDER_TOP_UP,
+          TransactionType.PROVIDER_SUPPLY,
+        ]),
+      },
+      relations: ['coordinator'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  // A coordinator sees cash on hand and e-cash for every provider.
+  async coordinatorBalances(coordinatorId: string) {
+    let drawer = await this.cashDrawersRepo.findOne({ where: { coordinatorId } });
+    if (!drawer) {
+      drawer = await this.cashDrawersRepo.save(
+        this.cashDrawersRepo.create({ coordinatorId, balance: 0 }),
+      );
+    }
+    const approvedProviders = await this.coordinatorProvidersRepo.find({
+      where: { coordinatorId, status: ApplicationStatus.APPROVED },
+    });
+
+    // Keep one e-cash balance for every approved provider, even before
+    // that provider has supplied the coordinator any money.
+    for (const application of approvedProviders) {
+      const wallet = await this.walletsRepo.findOne({
+        where: { coordinatorId, providerId: application.providerId },
+      });
+      if (!wallet) {
+        await this.walletsRepo.save(
+          this.walletsRepo.create({
+            coordinatorId,
+            providerId: application.providerId,
+            balance: 0,
+          }),
+        );
+      }
+    }
+
+    const wallets = await this.walletsRepo.find({
+      where: { coordinatorId },
+      relations: ['provider'],
+    });
+    return { cash: drawer.balance, ecashWallets: wallets };
+  }
+
+  coordinatorTransactions(coordinatorId: string) {
+    return this.cashTransactionsRepo.find({
+      where: { coordinatorId },
+      relations: ['provider', 'agent'],
       order: { createdAt: 'DESC' },
     });
   }

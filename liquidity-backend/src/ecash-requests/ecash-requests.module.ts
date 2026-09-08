@@ -5,6 +5,7 @@ import { Wallet } from '../wallets/wallet.entity';
 import { CashDrawer } from '../wallets/cash-drawer.entity';
 import { CashTransaction } from '../wallets/cash-transaction.entity';
 import { AgentProvider } from '../agent-providers/agent-provider.entity';
+import { User } from '../users/user.entity';
 import { CoordinatorProvider } from '../coordinator-providers/coordinator-provider.entity';
 import { EcashRequestsService } from './ecash-requests.service';
 import { EcashRequestsController } from './ecash-requests.controller';
@@ -17,6 +18,7 @@ import { EcashRequestsController } from './ecash-requests.controller';
       CashDrawer,
       CashTransaction,
       AgentProvider,
+      User,
       CoordinatorProvider,
     ]),
   ],

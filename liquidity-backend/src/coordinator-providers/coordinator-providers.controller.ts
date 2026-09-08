@@ -56,4 +56,13 @@ export class CoordinatorProvidersController {
   ) {
     return this.service.decide(id, dto.status, user);
   }
+
+  @Roles(UserRole.PROVIDER, UserRole.ADMIN)
+  @Patch(':id/restrict')
+  restrict(
+    @Param('id') id: string,
+    @CurrentUser() user: { role: UserRole; providerId?: string },
+  ) {
+    return this.service.restrict(id, user);
+  }
 }

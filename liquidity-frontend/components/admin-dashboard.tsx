@@ -276,12 +276,12 @@ export default function AdminDashboard() {
                     </span>
                   </td>
                   <td>
-                    {user.status === "pending" && (
+                    {(user.status === "pending" || user.status === "suspended") && (
                       <button
                         onClick={() => approveUser(user.id)}
                         className="btn btn-success btn-sm"
                       >
-                        Approve
+                        {user.status === "suspended" ? "Activate" : "Approve"}
                       </button>
                     )}
                     {user.status === "active" && (

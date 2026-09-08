@@ -9,8 +9,11 @@ export default function ProviderDashboard() {
   const [loading, setLoading] = useState(true);
   const [applications, setApplications] = useState<any[]>([]);
   const [agentApplications, setAgentApplications] = useState<any[]>([]);
+  const [approvedAgents, setApprovedAgents] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
+  const [supplyRequests, setSupplyRequests] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [reserveHistory, setReserveHistory] = useState<any[]>([]);
   const [coordinators, setCoordinators] = useState<any[]>([]);
   const [balances, setBalances] = useState({ cash: 0, ecash: 0 });
   const [dailySummary, setDailySummary] = useState({ cashIn: 0, cashOut: 0 });
@@ -32,17 +35,29 @@ export default function ProviderDashboard() {
     setAgentApplications(response.data);
   }
 
+  async function loadApprovedAgents() {
+    const response = await axios.get("/api/agent-providers/approved-for-provider", authHeader);
+    setApprovedAgents(response.data);
+  }
+
   async function loadLogs() {
-    const [requestsResponse, transactionsResponse, balancesResponse, summaryResponse] = await Promise.all([
+    const [requestsResponse, transactionsResponse, historyResponse, balancesResponse, summaryResponse] = await Promise.all([
       axios.get("/api/ecash-requests/provider-history", authHeader),
       axios.get("/api/wallets/provider-transactions", authHeader),
+      axios.get("/api/wallets/provider-reserve-history", authHeader),
       axios.get("/api/wallets/provider-balances", authHeader),
       axios.get("/api/wallets/provider-daily-summary", authHeader),
     ]);
     setRequests(requestsResponse.data);
     setTransactions(transactionsResponse.data);
+    setReserveHistory(historyResponse.data);
     setBalances(balancesResponse.data);
     setDailySummary(summaryResponse.data);
+  }
+
+  async function loadSupplyRequests() {
+    const response = await axios.get("/api/provider-supply-requests/pending", authHeader);
+    setSupplyRequests(response.data);
   }
 
   async function loadCoordinators() {
@@ -58,7 +73,9 @@ export default function ProviderDashboard() {
 
       await loadApplications();
       await loadAgentApplications();
+      await loadApprovedAgents();
       await loadLogs();
+      await loadSupplyRequests();
       await loadCoordinators();
 
       const providersResponse = await axios.get("/api/providers");
@@ -89,19 +106,37 @@ export default function ProviderDashboard() {
     try {
       await axios.patch(`/api/agent-providers/${id}/decide`, { status }, authHeader);
       await loadAgentApplications();
+      await loadApprovedAgents();
       setActionError("");
     } catch (err) {
       setActionError("Something went wrong, please try again");
     }
   }
 
-  // --- provider reserve and coordinator supply ---
+  async function restrictAgent(id: string) {
+    try {
+      await axios.patch(`/api/agent-providers/${id}/restrict`, {}, authHeader);
+      await loadAgentApplications();
+      await loadApprovedAgents();
+      setActionError("");
+    } catch (err) {
+      setActionError("Could not restrict this agent");
+    }
+  }
+
+  async function restrictCoordinator(id: string) {
+    try {
+      await axios.patch(`/api/coordinator-providers/${id}/restrict`, {}, authHeader);
+      await loadApplications();
+      await loadCoordinators();
+      setActionError("");
+    } catch (err) {
+      setActionError("Could not restrict this coordinator");
+    }
+  }
+
+  // --- provider reserve ---
   const [reserveData, setReserveData] = useState({ type: "e_cash", amount: "" });
-  const [supplyData, setSupplyData] = useState({
-    coordinatorId: "",
-    type: "e_cash",
-    amount: "",
-  });
   const [moneyError, setMoneyError] = useState("");
 
   async function addReserve(e: any) {
@@ -125,24 +160,14 @@ export default function ProviderDashboard() {
     }
   }
 
-  async function supplyCoordinator(e: any) {
-    e.preventDefault();
-    if (!supplyData.coordinatorId || !supplyData.amount || Number(supplyData.amount) <= 0) {
-      setMoneyError("Please pick a coordinator and enter an amount");
-      return;
-    }
-
+  async function decideSupplyRequest(id: string, action: "fulfill" | "reject") {
     try {
-      await axios.post(
-        "/api/wallets/provider-supply",
-        { ...supplyData, amount: Number(supplyData.amount) },
-        authHeader,
-      );
+      await axios.patch(`/api/provider-supply-requests/${id}/${action}`, {}, authHeader);
       await loadLogs();
-      setSupplyData({ coordinatorId: "", type: "e_cash", amount: "" });
+      await loadSupplyRequests();
       setMoneyError("");
     } catch (err) {
-      setMoneyError("Could not supply this coordinator. Check your reserve balance.");
+      setMoneyError(action === "fulfill" ? "Could not fulfill this request. Check your reserve balance." : "Could not reject this request.");
     }
   }
 
@@ -239,44 +264,56 @@ export default function ProviderDashboard() {
           </form>
         </TitleCard>
 
-        <TitleCard title="Supply a coordinator">
+        <TitleCard title="Coordinator funding requests">
           <p className="text-sm text-base-content/60">
-            Move one type of liquidity from your reserve to an approved coordinator.
+            Coordinators request what they need; fulfill the request from your reserve.
           </p>
-          <form onSubmit={supplyCoordinator} className="flex flex-col gap-3 mt-2">
-            <select
-              value={supplyData.coordinatorId}
-              onChange={(e) => setSupplyData({ ...supplyData, coordinatorId: e.target.value })}
-              className="select w-full"
-            >
-              <option value="">Pick an approved coordinator</option>
-              {coordinators.map((item) => (
-                <option key={item.id} value={item.coordinatorId}>
-                  {item.coordinator.fullName}
-                </option>
+          {supplyRequests.length === 0 ? <p className="text-base-content/60 mt-3">No funding requests waiting.</p> : (
+            <div className="flex flex-col gap-2 mt-3">
+              {supplyRequests.map((request) => (
+                <div key={request.id} className="flex items-center justify-between border border-base-300 px-3 py-2 rounded-box gap-3">
+                  <div><p className="font-medium">{request.coordinator.fullName}</p><p className="text-sm text-base-content/60">Needs ৳{request.amount} {request.type === "physical_cash" ? "physical cash" : "e-cash"}</p></div>
+                  <div className="flex gap-2"><button onClick={() => decideSupplyRequest(request.id, "fulfill")} className="btn btn-success btn-sm">Fulfill</button><button onClick={() => decideSupplyRequest(request.id, "reject")} className="btn btn-ghost btn-sm">Reject</button></div>
+                </div>
               ))}
-            </select>
-            <select
-              value={supplyData.type}
-              onChange={(e) => setSupplyData({ ...supplyData, type: e.target.value })}
-              className="select w-full"
-            >
-              <option value="e_cash">E-cash</option>
-              <option value="physical_cash">Physical cash</option>
-            </select>
-            <input
-              type="number"
-              value={supplyData.amount}
-              onChange={(e) => setSupplyData({ ...supplyData, amount: e.target.value })}
-              placeholder="10000"
-              className="input w-full"
-            />
-            <button type="submit" className="btn btn-primary">Supply coordinator</button>
-          </form>
+            </div>
+          )}
         </TitleCard>
       </div>
 
       {moneyError && <p className="text-error text-sm">{moneyError}</p>}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <TitleCard title="Approved agents">
+          {approvedAgents.length === 0 ? (
+            <p className="text-base-content/60">No approved agents yet.</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {approvedAgents.map((application) => (
+                <div key={application.id} className="flex items-center justify-between border border-base-300 px-3 py-2 rounded-box">
+                  <span>{application.agent.fullName}</span>
+                  <button onClick={() => restrictAgent(application.id)} className="btn btn-warning btn-sm">Restrict</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </TitleCard>
+
+        <TitleCard title="Approved coordinators">
+          {coordinators.length === 0 ? (
+            <p className="text-base-content/60">No approved coordinators yet.</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {coordinators.map((application) => (
+                <div key={application.id} className="flex items-center justify-between border border-base-300 px-3 py-2 rounded-box">
+                  <span>{application.coordinator.fullName}</span>
+                  <button onClick={() => restrictCoordinator(application.id)} className="btn btn-warning btn-sm">Restrict</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </TitleCard>
+      </div>
 
       <TitleCard title="Agent join requests">
         {agentApplications.length === 0 ? (
@@ -297,6 +334,37 @@ export default function ProviderDashboard() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+      </TitleCard>
+
+      <TitleCard title="Provider reserve and supply history">
+        {reserveHistory.length === 0 ? (
+          <p className="text-base-content/60">No reserve top-up or coordinator supply yet.</p>
+        ) : (
+          <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100">
+            <table className="table table-zebra">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Activity</th>
+                  <th>Coordinator</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reserveHistory.map((transaction) => (
+                  <tr key={transaction.id}>
+                    <td>{new Date(transaction.createdAt).toLocaleString()}</td>
+                    <td>
+                      {transaction.type === "provider_top_up" ? "Reserve top-up" : "Coordinator supply"}
+                    </td>
+                    <td>{transaction.coordinator?.fullName || "-"}</td>
+                    <td>৳{transaction.amount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </TitleCard>
