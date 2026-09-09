@@ -60,13 +60,14 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex-1 flex items-center justify-center bg-base-200 px-4 py-16">
-      <div className="card w-full max-w-4xl shadow-xl overflow-hidden">
+    <main className="app-surface flex-1 flex items-center justify-center px-4 py-12 sm:py-16">
+      <div className="card dashboard-card w-full max-w-4xl overflow-hidden">
         <div className="grid grid-cols-1 md:grid-cols-2 bg-base-100">
           <AuthIntro />
 
-          <div className="py-16 px-8">
-            <h2 className="text-2xl font-semibold mb-2 text-center">Log in</h2>
+          <div className="py-12 px-8 sm:py-16">
+            <div className="badge badge-primary badge-outline mb-3">Welcome back</div>
+            <h2 className="text-3xl font-bold mb-2">Log in</h2>
             <p className="text-sm text-base-content/60 text-center mb-4">
               Use the email or phone you registered with.
             </p>
@@ -98,7 +99,7 @@ export default function LoginPage() {
 
               {error && <p className="text-error text-sm">{error}</p>}
 
-              <button type="submit" className="btn btn-primary mt-2">
+              <button type="submit" className="btn btn-primary mt-2 w-full">
                 Log in
               </button>
             </form>

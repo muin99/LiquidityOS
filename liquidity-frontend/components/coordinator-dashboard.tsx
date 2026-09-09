@@ -165,6 +165,12 @@ export default function CoordinatorDashboard() {
         </div>
       </div>
 
+      {requests.length > 0 && (
+        <div className="alert alert-info shadow-sm">
+          <span>{requests.length} agent request{requests.length > 1 ? "s are" : " is"} waiting for fulfillment.</span>
+        </div>
+      )}
+
       <TitleCard title="My available liquidity">
         <p className="text-sm text-base-content/60 -mt-2 mb-3">
           Your provider supplies and completed swaps update these balances.

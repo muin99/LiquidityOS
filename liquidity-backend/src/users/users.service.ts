@@ -106,6 +106,13 @@ export class UsersService {
     }
 
     const user = await this.findById(id);
+    // Once an account is active it may have applications, balances, or
+    // ledger history. Keep that audit trail and suspend it instead.
+    if (user.status !== UserStatus.PENDING) {
+      throw new BadRequestException(
+        'Only pending accounts can be deleted. Restrict active accounts instead.',
+      );
+    }
     await this.usersRepo.remove(user);
     return { message: 'User deleted' };
   }

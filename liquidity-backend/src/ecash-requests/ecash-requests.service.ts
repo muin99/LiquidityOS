@@ -87,7 +87,12 @@ export class EcashRequestsService {
 
   // Step 2: a coordinator says "I'll take care of this one".
   async accept(id: string, coordinatorId: string) {
-    const request = await this.requestsRepo.findOne({ where: { id } });
+    return this.dataSource.transaction(async (safe) => {
+    // Lock the row while it is claimed, so only the first coordinator wins.
+    const request = await safe.findOne(EcashRequest, {
+      where: { id },
+      lock: { mode: 'pessimistic_write' },
+    });
     if (!request) throw new NotFoundException('Request not found');
     if (request.status !== RequestStatus.PENDING) {
       throw new BadRequestException('This request is not pending anymore');
@@ -111,7 +116,8 @@ export class EcashRequestsService {
 
     request.coordinatorId = coordinatorId;
     request.status = RequestStatus.ACCEPTED;
-    return this.requestsRepo.save(request);
+    return safe.save(request);
+    });
   }
 
   // A provider can see the full request history for its own network.
@@ -149,7 +155,10 @@ export class EcashRequestsService {
   // the request being marked "fulfilled" both happen, or neither does.
   async fulfill(id: string, coordinatorId: string) {
     return this.dataSource.transaction(async (safe) => {
-      const request = await safe.findOne(EcashRequest, { where: { id } });
+      const request = await safe.findOne(EcashRequest, {
+        where: { id },
+        lock: { mode: 'pessimistic_write' },
+      });
       if (!request) throw new NotFoundException('Request not found');
 
       if (request.coordinatorId !== coordinatorId) {
@@ -161,6 +170,7 @@ export class EcashRequestsService {
 
       let agentWallet = await safe.findOne(Wallet, {
         where: { agentId: request.agentId, providerId: request.providerId },
+        lock: { mode: 'pessimistic_write' },
       });
       if (!agentWallet) {
         agentWallet = safe.create(Wallet, {
@@ -172,6 +182,7 @@ export class EcashRequestsService {
 
       let coordinatorWallet = await safe.findOne(Wallet, {
         where: { coordinatorId, providerId: request.providerId },
+        lock: { mode: 'pessimistic_write' },
       });
       if (!coordinatorWallet) {
         coordinatorWallet = safe.create(Wallet, {
@@ -183,6 +194,7 @@ export class EcashRequestsService {
 
       let agentDrawer = await safe.findOne(CashDrawer, {
         where: { agentId: request.agentId },
+        lock: { mode: 'pessimistic_write' },
       });
       if (!agentDrawer) {
         agentDrawer = safe.create(CashDrawer, {
@@ -193,6 +205,7 @@ export class EcashRequestsService {
 
       let coordinatorDrawer = await safe.findOne(CashDrawer, {
         where: { coordinatorId },
+        lock: { mode: 'pessimistic_write' },
       });
       if (!coordinatorDrawer) {
         coordinatorDrawer = safe.create(CashDrawer, {
