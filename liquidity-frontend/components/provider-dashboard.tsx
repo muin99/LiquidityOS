@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import UserGroupIcon from "@heroicons/react/24/outline/UserGroupIcon";
 import TitleCard from "@/components/title-card";
+import { CsvButton, PageControls } from "@/components/table-tools";
 
 export default function ProviderDashboard() {
   const [loading, setLoading] = useState(true);
@@ -19,6 +20,7 @@ export default function ProviderDashboard() {
   const [dailySummary, setDailySummary] = useState({ cashIn: 0, cashOut: 0 });
   const [providerName, setProviderName] = useState("");
   const [actionError, setActionError] = useState("");
+  const [historyPage, setHistoryPage] = useState(0);
 
   // Every request that needs to prove who we are just sends this
   // header by hand, no auto-attaching magic behind the scenes.
@@ -178,6 +180,8 @@ export default function ProviderDashboard() {
       </div>
     );
   }
+
+  const pagedReserveHistory = reserveHistory.slice(historyPage * 20, historyPage * 20 + 20);
 
   return (
     <div className="flex flex-col gap-8">
@@ -347,6 +351,7 @@ export default function ProviderDashboard() {
       </TitleCard>
 
       <TitleCard title="Provider reserve and supply history">
+        <CsvButton fileName="provider-reserve-history" rows={reserveHistory.map((transaction) => ({ date: transaction.createdAt, activity: transaction.type, provider: providerName, fulfilledBy: transaction.coordinator?.fullName || "Provider reserve", amount: transaction.amount }))} />
         {reserveHistory.length === 0 ? (
           <p className="text-base-content/60">No reserve top-up or coordinator supply yet.</p>
         ) : (
@@ -361,7 +366,7 @@ export default function ProviderDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {reserveHistory.map((transaction) => (
+                {pagedReserveHistory.map((transaction) => (
                   <tr key={transaction.id}>
                     <td>{new Date(transaction.createdAt).toLocaleString()}</td>
                     <td>
@@ -375,6 +380,7 @@ export default function ProviderDashboard() {
             </table>
           </div>
         )}
+        <PageControls page={historyPage} total={reserveHistory.length} setPage={setHistoryPage} />
       </TitleCard>
 
       <TitleCard title="Coordinator join requests">

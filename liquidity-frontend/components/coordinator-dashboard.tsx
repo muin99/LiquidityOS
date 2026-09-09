@@ -5,6 +5,7 @@ import axios from "axios";
 import InboxArrowDownIcon from "@heroicons/react/24/outline/InboxArrowDownIcon";
 import BuildingOfficeIcon from "@heroicons/react/24/outline/BuildingOfficeIcon";
 import TitleCard from "@/components/title-card";
+import { CsvButton, PageControls } from "@/components/table-tools";
 
 export default function CoordinatorDashboard() {
   const [loading, setLoading] = useState(true);
@@ -15,6 +16,8 @@ export default function CoordinatorDashboard() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [supplyRequests, setSupplyRequests] = useState<any[]>([]);
   const [actionError, setActionError] = useState("");
+  const [minimumCash, setMinimumCash] = useState(0);
+  const [historyPage, setHistoryPage] = useState(0);
 
   // Every request that needs to prove who we are just sends this
   // header by hand, no auto-attaching magic behind the scenes.
@@ -51,6 +54,7 @@ export default function CoordinatorDashboard() {
       await loadApplications();
       await loadBalances();
       await loadSupplyRequests();
+      setMinimumCash(Number(localStorage.getItem("coordinator_minimum_cash") || 0));
 
       const providersResponse = await axios.get("/api/providers");
       setProviders(providersResponse.data);
@@ -142,6 +146,9 @@ export default function CoordinatorDashboard() {
     return "badge-outline";
   }
 
+  function saveMinimumCash() { localStorage.setItem("coordinator_minimum_cash", String(minimumCash)); }
+  const historyTransactions = transactions.slice(historyPage * 20, historyPage * 20 + 20);
+
   return (
     <div className="flex flex-col gap-8">
       <div className="stats shadow w-full">
@@ -171,7 +178,12 @@ export default function CoordinatorDashboard() {
         </div>
       )}
 
+      {minimumCash > 0 && Number(balances.cash) < minimumCash && (
+        <div className="alert alert-error shadow-sm"><span>Cash on hand is below your minimum of ৳{minimumCash}.</span></div>
+      )}
+
       <TitleCard title="My available liquidity">
+        <div className="flex flex-col sm:flex-row gap-2 mb-4 items-start sm:items-center"><span className="text-sm text-base-content/60">Minimum cash warning</span><input type="number" value={minimumCash || ""} onChange={(e) => setMinimumCash(Number(e.target.value))} placeholder="1000" className="input input-sm w-32" /><button onClick={saveMinimumCash} className="btn btn-sm btn-outline">Save</button></div>
         <p className="text-sm text-base-content/60 -mt-2 mb-3">
           Your provider supplies and completed swaps update these balances.
         </p>
@@ -186,6 +198,7 @@ export default function CoordinatorDashboard() {
             <div key={wallet.id} className="stats shadow">
               <div className="stat">
                 <div className="stat-title">{wallet.provider.name} e-cash</div>
+                {!wallet.provider.isActive && <div className="badge badge-warning badge-sm">Archived provider</div>}
                 <div className="stat-value">৳{wallet.balance}</div>
               </div>
             </div>
@@ -353,6 +366,7 @@ export default function CoordinatorDashboard() {
       </TitleCard>
 
       <TitleCard title="My funding and fulfillment history">
+        <CsvButton fileName="coordinator-history" rows={transactions.map((transaction) => ({ date: transaction.createdAt, activity: transaction.type, provider: transaction.provider.name, requestedBy: transaction.agent?.fullName || "Provider", fulfilledBy: transaction.coordinator?.fullName || "Me", amount: transaction.amount }))} />
         {transactions.length === 0 ? (
           <p className="text-base-content/60">No supply or fulfillment activity yet.</p>
         ) : (
@@ -368,7 +382,7 @@ export default function CoordinatorDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {transactions.map((transaction) => (
+                {historyTransactions.map((transaction) => (
                   <tr key={transaction.id}>
                     <td>{new Date(transaction.createdAt).toLocaleString()}</td>
                     <td className="capitalize">{transaction.type.replaceAll("_", " ")}</td>
@@ -381,6 +395,7 @@ export default function CoordinatorDashboard() {
             </table>
           </div>
         )}
+        <PageControls page={historyPage} total={transactions.length} setPage={setHistoryPage} />
       </TitleCard>
     </div>
   );

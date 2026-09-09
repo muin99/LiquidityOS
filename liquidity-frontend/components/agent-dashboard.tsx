@@ -5,6 +5,7 @@ import axios from "axios";
 import BanknotesIcon from "@heroicons/react/24/outline/BanknotesIcon";
 import WalletIcon from "@heroicons/react/24/outline/WalletIcon";
 import TitleCard from "@/components/title-card";
+import { CsvButton, PageControls } from "@/components/table-tools";
 
 export default function AgentDashboard() {
   const [loading, setLoading] = useState(true);
@@ -17,6 +18,9 @@ export default function AgentDashboard() {
   const [allProviders, setAllProviders] = useState<any[]>([]);
   const [providerApplications, setProviderApplications] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [minimumCash, setMinimumCash] = useState(0);
+  const [requestPage, setRequestPage] = useState(0);
+  const [transactionPage, setTransactionPage] = useState(0);
 
   // Every request that needs to prove who we are just sends this
   // header by hand, no auto-attaching magic behind the scenes.
@@ -62,6 +66,7 @@ export default function AgentDashboard() {
       await loadTransactions();
 
       await loadProviderApplications();
+      setMinimumCash(Number(localStorage.getItem("agent_minimum_cash") || 0));
 
       setLoading(false);
     }
@@ -221,6 +226,13 @@ export default function AgentDashboard() {
     if (req.status === "fulfilled") fulfilledCount++;
   }
 
+  const historyRequests = requests.slice(requestPage * 20, requestPage * 20 + 20);
+  const historyTransactions = [...transactions].reverse().slice(transactionPage * 20, transactionPage * 20 + 20);
+
+  function saveMinimumCash() {
+    localStorage.setItem("agent_minimum_cash", String(minimumCash));
+  }
+
   // Just picks a daisyUI badge color to match the status word, so
   // its easier to scan a long list at a glance.
   function statusBadgeClass(status: string) {
@@ -266,7 +278,16 @@ export default function AgentDashboard() {
         </div>
       )}
 
+      {minimumCash > 0 && drawerBalance < minimumCash && (
+        <div className="alert alert-error shadow-sm"><span>Cash drawer is below your minimum balance of ৳{minimumCash}.</span></div>
+      )}
+
       <TitleCard title="E-cash wallets">
+        <div className="flex flex-col sm:flex-row gap-2 mb-4 items-start sm:items-center">
+          <span className="text-sm text-base-content/60">Minimum cash warning</span>
+          <input type="number" value={minimumCash || ""} onChange={(e) => setMinimumCash(Number(e.target.value))} placeholder="1000" className="input input-sm w-32" />
+          <button onClick={saveMinimumCash} className="btn btn-sm btn-outline">Save</button>
+        </div>
         {wallets.length === 0 ? (
           <p className="text-base-content/60">
             No e-cash yet — ask a coordinator to send some using the form below.
@@ -280,6 +301,7 @@ export default function AgentDashboard() {
                     <WalletIcon className="h-8 w-8" />
                   </div>
                   <div className="stat-title">{wallet.provider.name}</div>
+                  {!wallet.provider.isActive && <div className="badge badge-warning badge-sm">Archived provider</div>}
                   <div className="stat-value">৳{wallet.balance}</div>
                 </div>
               </div>
@@ -436,6 +458,7 @@ export default function AgentDashboard() {
       </TitleCard>
 
       <TitleCard title="My liquidity requests">
+        <CsvButton fileName="my-liquidity-requests" rows={requests.map((req) => ({ provider: req.provider.name, requestedBy: "Me", type: req.type, amount: req.amount, status: req.status, claimedBy: req.coordinator?.fullName || "", fulfilledBy: req.status === "fulfilled" ? req.coordinator?.fullName || "" : "", requestedAt: req.requestedAt, fulfilledAt: req.fulfilledAt || "" }))} />
         {requests.length === 0 ? (
           <p className="text-base-content/60">You haven't asked for e-cash yet.</p>
         ) : (
@@ -444,18 +467,21 @@ export default function AgentDashboard() {
               <thead>
                 <tr>
                   <th>Provider</th>
+                  <th>Requested by</th>
                   <th>Amount</th>
                   <th>Type</th>
                   <th>Status</th>
                   <th></th>
                   <th>Requested</th>
+                  <th>Claimed / fulfilled by</th>
                   <th>Fulfilled</th>
                 </tr>
               </thead>
               <tbody>
-                {requests.map((req) => (
+                {historyRequests.map((req) => (
                   <tr key={req.id}>
                     <td>{req.provider.name}</td>
+                    <td>Me</td>
                     <td>৳{req.amount}</td>
                     <td>{req.type === "physical_cash" ? "Physical cash" : "E-cash"}</td>
                   <td>
@@ -474,6 +500,7 @@ export default function AgentDashboard() {
                     )}
                   </td>
                     <td>{new Date(req.requestedAt).toLocaleString()}</td>
+                    <td>{req.coordinator?.fullName || "Not claimed"}</td>
                     <td>{req.fulfilledAt ? new Date(req.fulfilledAt).toLocaleString() : "—"}</td>
                   </tr>
                 ))}
@@ -481,9 +508,11 @@ export default function AgentDashboard() {
             </table>
           </div>
         )}
+        <PageControls page={requestPage} total={requests.length} setPage={setRequestPage} />
       </TitleCard>
 
       <TitleCard title="Transaction history">
+        <CsvButton fileName="my-transactions" rows={transactions.map((tx) => ({ date: tx.createdAt, type: tx.type, provider: tx.provider.name, amount: tx.amount, drawerAfter: tx.drawerBalanceAfter, walletAfter: tx.walletBalanceAfter }))} />
         {transactions.length === 0 ? (
           <p className="text-base-content/60">No cash-in/cash-out yet.</p>
         ) : (
@@ -500,7 +529,7 @@ export default function AgentDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {[...transactions].reverse().map((tx) => (
+                {historyTransactions.map((tx) => (
                   <tr key={tx.id}>
                     <td>{new Date(tx.createdAt).toLocaleString()}</td>
                     <td>
@@ -523,6 +552,7 @@ export default function AgentDashboard() {
             </table>
           </div>
         )}
+        <PageControls page={transactionPage} total={transactions.length} setPage={setTransactionPage} />
       </TitleCard>
     </div>
   );
