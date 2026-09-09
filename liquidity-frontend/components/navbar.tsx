@@ -31,19 +31,21 @@ export default function Navbar() {
   }
 
   return (
-    <div className="navbar sticky top-0 z-10 bg-base-100 shadow-md px-6">
-      <div className="flex-1">
-        <Link href="/" className="text-xl font-bold text-primary">
-          Liquidity Lite
+    <div className="navbar sticky top-0 z-10 border-b border-base-300/70 bg-base-100/95 px-4 shadow-sm backdrop-blur sm:px-6">
+      <div className="flex-1 gap-3">
+        <Link href="/" className="flex items-center gap-2 text-xl font-bold text-primary">
+          <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-sm font-black text-primary-content">L</span>
+          <span>Liquidity<span className="text-base-content">OS</span></span>
         </Link>
       </div>
 
       {user ? (
         <div className="flex items-center gap-3">
-          <span className="text-sm text-base-content/70 capitalize">
-            {user.fullName} ({user.role})
-          </span>
-          <button onClick={handleLogout} className="btn btn-ghost btn-sm">
+          <div className="hidden text-right sm:block">
+            <p className="text-sm font-semibold">{user.fullName}</p>
+            <p className="text-xs text-base-content/60 capitalize">{user.role}</p>
+          </div>
+          <button onClick={handleLogout} className="btn btn-ghost btn-sm text-base-content/70">
             Log out
           </button>
         </div>

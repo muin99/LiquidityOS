@@ -10,10 +10,13 @@ export default function TitleCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="card w-full bg-base-100 shadow-xl">
-      <div className="card-body">
-        <h2 className="card-title text-lg">{title}</h2>
-        <div className="divider mt-1 mb-2"></div>
+    <div className="card dashboard-card w-full bg-base-100">
+      <div className="card-body p-5 sm:p-6">
+        <div className="flex items-center gap-3">
+          <span className="h-6 w-1 rounded-full bg-primary" />
+          <h2 className="card-title text-lg font-bold">{title}</h2>
+        </div>
+        <div className="divider my-1"></div>
         {children}
       </div>
     </div>

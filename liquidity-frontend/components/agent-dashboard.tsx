@@ -260,6 +260,12 @@ export default function AgentDashboard() {
         </div>
       </div>
 
+      {pendingCount > 0 && (
+        <div className="alert alert-warning shadow-sm">
+          <span>You have {pendingCount} liquidity request{pendingCount > 1 ? "s" : ""} waiting for a coordinator.</span>
+        </div>
+      )}
+
       <TitleCard title="E-cash wallets">
         {wallets.length === 0 ? (
           <p className="text-base-content/60">

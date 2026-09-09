@@ -83,9 +83,13 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="flex-1 bg-base-200 px-6 py-10">
-      <div className="max-w-4xl mx-auto flex flex-col gap-6">
-        <h1 className="text-2xl font-bold capitalize">{role} dashboard</h1>
+    <main className="app-surface flex-1 px-4 py-7 sm:px-6 sm:py-10">
+      <div className="mx-auto flex max-w-6xl flex-col gap-6">
+        <div className="rounded-2xl bg-primary px-6 py-6 text-primary-content shadow-lg sm:px-8">
+          <p className="text-sm font-medium opacity-75">LiquidityOS workspace</p>
+          <h1 className="mt-1 text-3xl font-bold capitalize">{role} dashboard</h1>
+          <p className="mt-2 text-sm opacity-85">Manage today&apos;s liquidity, requests, and network activity in one place.</p>
+        </div>
 
         {role === "agent" && <AgentDashboard />}
         {role === "coordinator" && <CoordinatorDashboard />}

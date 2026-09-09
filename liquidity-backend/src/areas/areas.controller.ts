@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AreasService } from './areas.service';
 import { CreateAreaDto } from './dto/create-area.dto';
@@ -26,5 +26,29 @@ export class AreasController {
   @Post()
   create(@Body() dto: CreateAreaDto) {
     return this.areasService.create(dto.name, dto.region);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Get('all')
+  findAllForAdmin() {
+    return this.areasService.findAllForAdmin();
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Patch(':id/deactivate')
+  deactivate(@Param('id') id: string) {
+    return this.areasService.setActive(id, false);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Patch(':id/activate')
+  activate(@Param('id') id: string) {
+    return this.areasService.setActive(id, true);
   }
 }

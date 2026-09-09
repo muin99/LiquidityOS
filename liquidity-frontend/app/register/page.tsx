@@ -135,7 +135,7 @@ export default function RegisterPage() {
 
   if (submitted) {
     return (
-      <main className="flex-1 flex items-center justify-center bg-base-200 px-4 py-16">
+      <main className="app-surface flex-1 flex items-center justify-center px-4 py-16">
         <div className="alert alert-success max-w-sm">
           <span>{successMessage} Redirecting you to the login page…</span>
         </div>
@@ -144,13 +144,14 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="flex-1 flex items-center justify-center bg-base-200 px-4 py-16">
-      <div className="card w-full max-w-4xl shadow-xl overflow-hidden">
+    <main className="app-surface flex-1 flex items-center justify-center px-4 py-12 sm:py-16">
+      <div className="card dashboard-card w-full max-w-4xl overflow-hidden">
         <div className="grid grid-cols-1 md:grid-cols-2 bg-base-100">
           <AuthIntro />
 
-          <div className="py-16 px-8">
-            <h2 className="text-2xl font-semibold mb-2 text-center">
+          <div className="py-12 px-8 sm:py-16">
+            <div className="badge badge-primary badge-outline mb-3">Join the network</div>
+            <h2 className="text-3xl font-bold mb-2">
               Create an account
             </h2>
             <p className="text-sm text-base-content/60 text-center mb-4">
@@ -264,7 +265,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="btn btn-primary mt-2"
+              className="btn btn-primary mt-2 w-full"
             >
               {submitting ? "Registering..." : "Register"}
             </button>

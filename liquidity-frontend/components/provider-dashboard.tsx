@@ -219,6 +219,14 @@ export default function ProviderDashboard() {
         </div>
       </div>
 
+      {(applications.length > 0 || agentApplications.length > 0 || supplyRequests.length > 0) && (
+        <div className="alert alert-info shadow-sm">
+          <span>
+            You have {applications.length + agentApplications.length + supplyRequests.length} item{applications.length + agentApplications.length + supplyRequests.length > 1 ? "s" : ""} waiting for action.
+          </span>
+        </div>
+      )}
+
       <TitleCard title="Provider reserve balances">
         <p className="text-sm text-base-content/60 -mt-2 mb-3">
           Available liquidity held by {providerName} for its network.

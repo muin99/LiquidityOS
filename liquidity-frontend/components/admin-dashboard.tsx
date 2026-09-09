@@ -38,12 +38,12 @@ export default function AdminDashboard() {
   }
 
   async function loadAreas() {
-    const response = await axios.get("/api/areas");
+    const response = await axios.get("/api/areas/all", authHeader);
     setAreas(response.data);
   }
 
   async function loadProviders() {
-    const response = await axios.get("/api/providers");
+    const response = await axios.get("/api/providers/all", authHeader);
     setProviders(response.data);
   }
 
@@ -95,6 +95,26 @@ export default function AdminDashboard() {
       setActionError("");
     } catch (err) {
       setActionError("Could not restrict this user");
+    }
+  }
+
+  async function setAreaActive(id: string, isActive: boolean) {
+    try {
+      await axios.patch(`/api/areas/${id}/${isActive ? "deactivate" : "activate"}`, {}, authHeader);
+      await loadAreas();
+      setActionError("");
+    } catch (err) {
+      setActionError("Could not update this area");
+    }
+  }
+
+  async function setProviderActive(id: string, isActive: boolean) {
+    try {
+      await axios.patch(`/api/providers/${id}/${isActive ? "deactivate" : "activate"}`, {}, authHeader);
+      await loadProviders();
+      setActionError("");
+    } catch (err) {
+      setActionError("Could not update this provider");
     }
   }
 
@@ -206,6 +226,14 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {(pendingUsers.length > 0 || pendingApplications.length > 0) && (
+        <div className="alert alert-warning shadow-sm">
+          <span>
+            {pendingUsers.length + pendingApplications.length} registration or provider link{pendingUsers.length + pendingApplications.length > 1 ? "s are" : " is"} waiting for review.
+          </span>
+        </div>
+      )}
+
       <TitleCard title="Pending registrations">
         <p className="text-sm text-base-content/60 -mt-2 mb-3">
           Agents, coordinators, and providers all start here — coordinator join
@@ -292,12 +320,14 @@ export default function AdminDashboard() {
                         Restrict
                       </button>
                     )}
-                    <button
-                      onClick={() => deleteUser(user.id, user.fullName)}
-                      className="btn btn-ghost btn-error btn-sm ml-2"
-                    >
-                      Delete
-                    </button>
+                    {user.status === "pending" && (
+                      <button
+                        onClick={() => deleteUser(user.id, user.fullName)}
+                        className="btn btn-ghost btn-error btn-sm ml-2"
+                      >
+                        Delete
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -385,11 +415,14 @@ export default function AdminDashboard() {
           </form>
 
           {areas.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-3">
+            <div className="flex flex-col gap-2 mt-3">
               {areas.map((area) => (
-                <span key={area.id} className="badge badge-outline">
-                  {area.name}
-                </span>
+                <div key={area.id} className="flex items-center justify-between border border-base-300 px-3 py-2 rounded-box">
+                  <span>{area.name} <span className="text-base-content/60">({area.region})</span></span>
+                  <button onClick={() => setAreaActive(area.id, area.isActive)} className={`btn btn-sm ${area.isActive ? "btn-warning" : "btn-success"}`}>
+                    {area.isActive ? "Deactivate" : "Activate"}
+                  </button>
+                </div>
               ))}
             </div>
           )}
@@ -425,11 +458,14 @@ export default function AdminDashboard() {
           </form>
 
           {providers.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-3">
+            <div className="flex flex-col gap-2 mt-3">
               {providers.map((provider) => (
-                <span key={provider.id} className="badge badge-outline">
-                  {provider.name}
-                </span>
+                <div key={provider.id} className="flex items-center justify-between border border-base-300 px-3 py-2 rounded-box">
+                  <span>{provider.name}</span>
+                  <button onClick={() => setProviderActive(provider.id, provider.isActive)} className={`btn btn-sm ${provider.isActive ? "btn-warning" : "btn-success"}`}>
+                    {provider.isActive ? "Deactivate" : "Activate"}
+                  </button>
+                </div>
               ))}
             </div>
           )}
