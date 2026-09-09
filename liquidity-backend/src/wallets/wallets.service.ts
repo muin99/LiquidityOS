@@ -41,7 +41,12 @@ export class WalletsService {
 
   async myWallets(agentId: string) {
     const drawer = await this.getOrCreateDrawer(agentId);
-    const wallets = await this.walletsRepo.find({ where: { agentId } });
+    // loading the "provider" relation too, so the frontend can show a
+    // name like "bKash" instead of just a providerId uuid
+    const wallets = await this.walletsRepo.find({
+      where: { agentId },
+      relations: ['provider'],
+    });
     return { cashDrawer: drawer, ecashWallets: wallets };
   }
 
