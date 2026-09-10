@@ -26,41 +26,41 @@ export default function HomePage() {
 
       <div className="max-w-4xl mx-auto w-full px-6 pb-20">
         <h2 className="text-lg font-semibold mb-4 text-center">
-          Preview a dashboard
+          Four roles, one platform
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Link href="/dashboard/agent" className="card bg-base-100 shadow hover:shadow-lg transition-shadow">
+          <div className="card bg-base-100 shadow">
             <div className="card-body items-center text-center">
               <h3 className="card-title">Agent</h3>
               <p className="text-sm text-base-content/60">
                 Cash drawer, e-cash wallets, and requests
               </p>
             </div>
-          </Link>
-          <Link href="/dashboard/coordinator" className="card bg-base-100 shadow hover:shadow-lg transition-shadow">
+          </div>
+          <div className="card bg-base-100 shadow">
             <div className="card-body items-center text-center">
               <h3 className="card-title">Coordinator</h3>
               <p className="text-sm text-base-content/60">
                 Fulfill requests, apply to providers
               </p>
             </div>
-          </Link>
-          <Link href="/dashboard/provider" className="card bg-base-100 shadow hover:shadow-lg transition-shadow">
+          </div>
+          <div className="card bg-base-100 shadow">
             <div className="card-body items-center text-center">
               <h3 className="card-title">Provider</h3>
               <p className="text-sm text-base-content/60">
                 Approve coordinators wanting to join
               </p>
             </div>
-          </Link>
-          <Link href="/dashboard/admin" className="card bg-base-100 shadow hover:shadow-lg transition-shadow">
+          </div>
+          <div className="card bg-base-100 shadow">
             <div className="card-body items-center text-center">
               <h3 className="card-title">Admin</h3>
               <p className="text-sm text-base-content/60">
                 Approve registrations
               </p>
             </div>
-          </Link>
+          </div>
         </div>
       </div>
     </main>
