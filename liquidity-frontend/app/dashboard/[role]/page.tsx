@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getUser } from "@/lib/auth";
 import AgentDashboard from "@/components/agent-dashboard";
@@ -69,11 +69,7 @@ export default function DashboardPage() {
         {role === "agent" && <AgentDashboard />}
         {role === "coordinator" && <CoordinatorDashboard />}
         {role === "admin" && <AdminDashboard />}
-        {role === "provider" && (
-          <Suspense fallback={null}>
-            <ProviderDashboard />
-          </Suspense>
-        )}
+        {role === "provider" && <ProviderDashboard />}
       </div>
     </main>
   );
