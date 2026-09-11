@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import axios from "axios";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import api from "@/lib/api";
 import { registerSchema } from "@/lib/validation";
 
 export default function RegisterPage() {
@@ -33,11 +33,11 @@ export default function RegisterPage() {
   // As soon as the page opens, go ask the backend for the list of
   // areas and providers, so the dropdowns below have real options.
   useEffect(() => {
-    api.get("/areas").then((response) => {
+    axios.get("/api/areas").then((response) => {
       setAreas(response.data);
     });
 
-    api.get("/providers").then((response) => {
+    axios.get("/api/providers").then((response) => {
       setProviders(response.data);
     });
   }, []);
@@ -97,7 +97,7 @@ export default function RegisterPage() {
     setSubmitting(true);
 
     try {
-      const response = await api.post("/auth/register", {
+      const response = await axios.post("/api/auth/register", {
         fullName: formData.fullName,
         email: formData.email,
         password: formData.password,

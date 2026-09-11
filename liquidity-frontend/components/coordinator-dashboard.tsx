@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import api from "@/lib/api";
+import axios from "axios";
 
 export default function CoordinatorDashboard() {
   const [loading, setLoading] = useState(true);
@@ -10,14 +10,19 @@ export default function CoordinatorDashboard() {
   const [providers, setProviders] = useState<any[]>([]);
   const [actionError, setActionError] = useState("");
 
+  // Every request that needs to prove who we are just sends this
+  // header by hand, no auto-attaching magic behind the scenes.
+  const token = localStorage.getItem("access_token");
+  const authHeader = { headers: { Authorization: `Bearer ${token}` } };
+
   function loadRequests() {
-    return api.get("/ecash-requests/pending").then((response) => {
+    return axios.get("/api/ecash-requests/pending", authHeader).then((response) => {
       setRequests(response.data);
     });
   }
 
   function loadApplications() {
-    return api.get("/coordinator-providers/mine").then((response) => {
+    return axios.get("/api/coordinator-providers/mine", authHeader).then((response) => {
       setApplications(response.data);
     });
   }
@@ -26,7 +31,7 @@ export default function CoordinatorDashboard() {
     Promise.all([
       loadRequests(),
       loadApplications(),
-      api.get("/providers").then((response) => setProviders(response.data)),
+      axios.get("/api/providers").then((response) => setProviders(response.data)),
     ]).then(() => {
       setLoading(false);
     });
@@ -37,22 +42,19 @@ export default function CoordinatorDashboard() {
   // (actually send the e-cash). We just do both, one after the
   // other, when the coordinator clicks the one "Fulfill" button.
   async function handleFulfill(id: string) {
-    setActionError("");
-
     try {
-      await api.patch(`/ecash-requests/${id}/accept`);
-      await api.patch(`/ecash-requests/${id}/fulfill`);
+      await axios.patch(`/api/ecash-requests/${id}/accept`, {}, authHeader);
+      await axios.patch(`/api/ecash-requests/${id}/fulfill`, {}, authHeader);
       await loadRequests();
+      setActionError("");
     } catch (err: any) {
-      const backendMessage = err.response && err.response.data && err.response.data.message;
-      setActionError(backendMessage || "Something went wrong, please try again");
+      setActionError(err.response?.data?.message || "Something went wrong, please try again");
     }
   }
 
   // --- apply to become a coordinator for a provider ---
   const [selectedProvider, setSelectedProvider] = useState("");
   const [applyError, setApplyError] = useState("");
-  const [applying, setApplying] = useState(false);
 
   async function handleApply(e: any) {
     e.preventDefault();
@@ -62,21 +64,18 @@ export default function CoordinatorDashboard() {
       return;
     }
 
-    setApplyError("");
-    setApplying(true);
-
     try {
-      await api.post("/coordinator-providers/apply", {
-        providerId: selectedProvider,
-      });
+      await axios.post(
+        "/api/coordinator-providers/apply",
+        { providerId: selectedProvider },
+        authHeader,
+      );
       await loadApplications();
+      setApplyError("");
       setSelectedProvider("");
     } catch (err: any) {
-      const backendMessage = err.response && err.response.data && err.response.data.message;
-      setApplyError(backendMessage || "Something went wrong, please try again");
+      setApplyError(err.response?.data?.message || "Something went wrong, please try again");
     }
-
-    setApplying(false);
   }
 
   if (loading) {
@@ -168,7 +167,7 @@ export default function CoordinatorDashboard() {
               </select>
             </fieldset>
 
-            <button type="submit" disabled={applying} className="btn btn-primary sm:mt-6">
+            <button type="submit" className="btn btn-primary sm:mt-6">
               Apply
             </button>
           </form>
