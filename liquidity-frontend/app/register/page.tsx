@@ -33,13 +33,15 @@ export default function RegisterPage() {
   // As soon as the page opens, go ask the backend for the list of
   // areas and providers, so the dropdowns below have real options.
   useEffect(() => {
-    axios.get("/api/areas").then((response) => {
-      setAreas(response.data);
-    });
+    async function getData() {
+      const areasResponse = await axios.get("/api/areas");
+      setAreas(areasResponse.data);
 
-    axios.get("/api/providers").then((response) => {
-      setProviders(response.data);
-    });
+      const providersResponse = await axios.get("/api/providers");
+      setProviders(providersResponse.data);
+    }
+
+    getData();
   }, []);
 
   // After a successful registration, wait a bit and then send the
@@ -103,14 +105,14 @@ export default function RegisterPage() {
         password: formData.password,
         role: formData.role,
         areaId: formData.role === "provider" ? undefined : formData.areaId,
-        providerId: formData.role === "provider" ? formData.providerId : undefined,
+        providerId:
+          formData.role === "provider" ? formData.providerId : undefined,
       });
 
       setSuccessMessage(response.data.message);
       setSubmitted(true);
-    } catch (err: any) {
-      const backendMessage = err.response && err.response.data && err.response.data.message;
-      setError(backendMessage || "Something went wrong, please try again");
+    } catch (err) {
+      setError("Something went wrong, please try again");
       setSubmitting(false);
     }
   }
@@ -131,8 +133,8 @@ export default function RegisterPage() {
         <div className="card-body">
           <h1 className="card-title">Create an account</h1>
           <p className="text-sm text-base-content/60">
-            Sign up as an agent, a coordinator, or a provider. An admin has
-            to approve your account before you can log in.
+            Sign up as an agent, a coordinator, or a provider. An admin has to
+            approve your account before you can log in.
           </p>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-3 mt-2">
@@ -238,7 +240,11 @@ export default function RegisterPage() {
 
             {error && <p className="text-error text-sm">{error}</p>}
 
-            <button type="submit" disabled={submitting} className="btn btn-primary mt-2">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="btn btn-primary mt-2"
+            >
               {submitting ? "Registering..." : "Register"}
             </button>
           </form>

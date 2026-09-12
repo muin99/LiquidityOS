@@ -53,10 +53,8 @@ export default function LoginPage() {
 
       setError("");
       router.push(`/dashboard/${response.data.user.role}`);
-    } catch (err: any) {
-      // The backend sends back a nice message when something is wrong,
-      // like "Wrong email/phone or password".
-      setError(err.response?.data?.message || "Something went wrong, please try again");
+    } catch (err) {
+      setError("Something went wrong, please try again");
     }
   }
 
@@ -89,7 +87,7 @@ export default function LoginPage() {
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                placeholder="••••••••"
+                placeholder="********"
                 className="input w-full"
               />
             </fieldset>

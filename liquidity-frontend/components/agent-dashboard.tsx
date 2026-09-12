@@ -20,27 +20,29 @@ export default function AgentDashboard() {
   // Go ask the backend "what does my stuff look like right now" and
   // put the answer into state. We call this again after every
   // cash-in / cash-out / request, so the numbers on screen stay fresh.
-  function loadWallets() {
-    return axios.get("/api/wallets/me", authHeader).then((response) => {
-      setDrawerBalance(Number(response.data.cashDrawer.balance));
-      setWallets(response.data.ecashWallets);
-    });
+  async function loadWallets() {
+    const response = await axios.get("/api/wallets/me", authHeader);
+    setDrawerBalance(Number(response.data.cashDrawer.balance));
+    setWallets(response.data.ecashWallets);
   }
 
-  function loadRequests() {
-    return axios.get("/api/ecash-requests/mine", authHeader).then((response) => {
-      setRequests(response.data);
-    });
+  async function loadRequests() {
+    const response = await axios.get("/api/ecash-requests/mine", authHeader);
+    setRequests(response.data);
   }
 
   useEffect(() => {
-    Promise.all([
-      loadWallets(),
-      loadRequests(),
-      axios.get("/api/providers").then((response) => setProviders(response.data)),
-    ]).then(() => {
+    async function loadEverything() {
+      await loadWallets();
+      await loadRequests();
+
+      const providersResponse = await axios.get("/api/providers");
+      setProviders(providersResponse.data);
+
       setLoading(false);
-    });
+    }
+
+    loadEverything();
   }, []);
 
   // --- cash-in / cash-out form ---
@@ -85,8 +87,8 @@ export default function AgentDashboard() {
       await loadWallets();
       setMoveError("");
       setMoveData({ ...moveData, amount: "" });
-    } catch (err: any) {
-      setMoveError(err.response?.data?.message || "Something went wrong, please try again");
+    } catch (err) {
+      setMoveError("Something went wrong, please try again");
     }
   }
 
@@ -128,8 +130,8 @@ export default function AgentDashboard() {
       await loadRequests();
       setError("");
       setFormData({ providerId: "", amount: "" });
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Something went wrong, please try again");
+    } catch (err) {
+      setError("Something went wrong, please try again");
     }
   }
 

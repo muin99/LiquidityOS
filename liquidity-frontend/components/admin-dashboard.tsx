@@ -16,39 +16,37 @@ export default function AdminDashboard() {
   const token = localStorage.getItem("access_token");
   const authHeader = { headers: { Authorization: `Bearer ${token}` } };
 
-  function loadPendingUsers() {
-    return axios.get("/api/users/pending", authHeader).then((response) => {
-      setPendingUsers(response.data);
-    });
+  async function loadPendingUsers() {
+    const response = await axios.get("/api/users/pending", authHeader);
+    setPendingUsers(response.data);
   }
 
-  function loadPendingApplications() {
-    return axios.get("/api/coordinator-providers/pending", authHeader).then((response) => {
-      setPendingApplications(response.data);
-    });
+  async function loadPendingApplications() {
+    const response = await axios.get("/api/coordinator-providers/pending", authHeader);
+    setPendingApplications(response.data);
   }
 
-  function loadAreas() {
-    return axios.get("/api/areas").then((response) => {
-      setAreas(response.data);
-    });
+  async function loadAreas() {
+    const response = await axios.get("/api/areas");
+    setAreas(response.data);
   }
 
-  function loadProviders() {
-    return axios.get("/api/providers").then((response) => {
-      setProviders(response.data);
-    });
+  async function loadProviders() {
+    const response = await axios.get("/api/providers");
+    setProviders(response.data);
   }
 
   useEffect(() => {
-    Promise.all([
-      loadPendingUsers(),
-      loadPendingApplications(),
-      loadAreas(),
-      loadProviders(),
-    ]).then(() => {
+    async function loadEverything() {
+      await loadPendingUsers();
+      await loadPendingApplications();
+      await loadAreas();
+      await loadProviders();
+
       setLoading(false);
-    });
+    }
+
+    loadEverything();
   }, []);
 
   async function approveUser(id: string) {
@@ -56,18 +54,25 @@ export default function AdminDashboard() {
       await axios.patch(`/api/users/${id}/approve`, {}, authHeader);
       await loadPendingUsers();
       setActionError("");
-    } catch (err: any) {
-      setActionError(err.response?.data?.message || "Something went wrong, please try again");
+    } catch (err) {
+      setActionError("Something went wrong, please try again");
     }
   }
 
-  async function decideApplication(id: string, status: "approved" | "rejected") {
+  async function decideApplication(
+    id: string,
+    status: "approved" | "rejected",
+  ) {
     try {
-      await axios.patch(`/api/coordinator-providers/${id}/decide`, { status }, authHeader);
+      await axios.patch(
+        `/api/coordinator-providers/${id}/decide`,
+        { status },
+        authHeader,
+      );
       await loadPendingApplications();
       setActionError("");
-    } catch (err: any) {
-      setActionError(err.response?.data?.message || "Something went wrong, please try again");
+    } catch (err) {
+      setActionError("Something went wrong, please try again");
     }
   }
 
@@ -85,13 +90,17 @@ export default function AdminDashboard() {
     }
 
     try {
-      await axios.post("/api/areas", { name: areaName, region: areaRegion }, authHeader);
+      await axios.post(
+        "/api/areas",
+        { name: areaName, region: areaRegion },
+        authHeader,
+      );
       await loadAreas();
       setAreaError("");
       setAreaName("");
       setAreaRegion("");
-    } catch (err: any) {
-      setAreaError(err.response?.data?.message || "Something went wrong, please try again");
+    } catch (err) {
+      setAreaError("Something went wrong, please try again");
     }
   }
 
@@ -112,8 +121,8 @@ export default function AdminDashboard() {
       await loadProviders();
       setProviderError("");
       setProviderName("");
-    } catch (err: any) {
-      setProviderError(err.response?.data?.message || "Something went wrong, please try again");
+    } catch (err) {
+      setProviderError("Something went wrong, please try again");
     }
   }
 
@@ -130,9 +139,9 @@ export default function AdminDashboard() {
       <div>
         <h2 className="text-lg font-semibold mb-3">Pending registrations</h2>
         <p className="text-sm text-base-content/60 -mt-2 mb-3">
-          Agents, coordinators, and providers all start here — coordinator
-          join requests to a specific provider are decided by that
-          provider, not by admin.
+          Agents, coordinators, and providers all start here — coordinator join
+          requests to a specific provider are decided by that provider, not by
+          admin.
         </p>
         {pendingUsers.length === 0 ? (
           <p className="text-base-content/60">Nothing waiting for approval.</p>
@@ -151,7 +160,10 @@ export default function AdminDashboard() {
                     {user.provider && <> — {user.provider.name}</>}
                   </p>
                 </div>
-                <button onClick={() => approveUser(user.id)} className="btn btn-success btn-sm">
+                <button
+                  onClick={() => approveUser(user.id)}
+                  className="btn btn-success btn-sm"
+                >
                   Approve
                 </button>
               </div>
@@ -161,9 +173,13 @@ export default function AdminDashboard() {
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold mb-3">Pending coordinator join requests</h2>
+        <h2 className="text-lg font-semibold mb-3">
+          Pending coordinator join requests
+        </h2>
         {pendingApplications.length === 0 ? (
-          <p className="text-base-content/60">Nothing waiting for a decision.</p>
+          <p className="text-base-content/60">
+            Nothing waiting for a decision.
+          </p>
         ) : (
           <div className="flex flex-col gap-2">
             {pendingApplications.map((app) => (
@@ -256,7 +272,10 @@ export default function AdminDashboard() {
               sign up.
             </p>
 
-            <form onSubmit={handleAddProvider} className="flex flex-col gap-3 mt-2">
+            <form
+              onSubmit={handleAddProvider}
+              className="flex flex-col gap-3 mt-2"
+            >
               <fieldset className="fieldset">
                 <label className="label">Name</label>
                 <input
@@ -271,7 +290,9 @@ export default function AdminDashboard() {
               <button type="submit" className="btn btn-primary">
                 Add provider
               </button>
-              {providerError && <p className="text-error text-sm">{providerError}</p>}
+              {providerError && (
+                <p className="text-error text-sm">{providerError}</p>
+              )}
             </form>
 
             {providers.length > 0 && (

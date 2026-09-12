@@ -23,21 +23,23 @@ export default function DashboardPage() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
+    async function checkLogin() {
+      const token = localStorage.getItem("access_token");
 
-    // No token saved at all -> go log in first.
-    if (!token) {
-      router.push("/login");
-      return;
-    }
+      // No token saved at all -> go log in first.
+      if (!token) {
+        router.push("/login");
+        return;
+      }
 
-    // Don't just trust whatever's sitting in localStorage — actually
-    // ask the backend "is this token still good, and who does it
-    // belong to". GET /auth/me checks the token is real/not expired
-    // and sends back the fresh user info for whoever it belongs to.
-    axios
-      .get("/api/auth/me", { headers: { Authorization: `Bearer ${token}` } })
-      .then((response) => {
+      // Don't just trust whatever's sitting in localStorage — actually
+      // ask the backend "is this token still good, and who does it
+      // belong to". GET /auth/me checks the token is real/not expired
+      // and sends back the fresh user info for whoever it belongs to.
+      try {
+        const response = await axios.get("/api/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         const user = response.data;
 
         // Keep localStorage's copy of "user" up to date too, so the
@@ -52,14 +54,16 @@ export default function DashboardPage() {
         }
 
         setReady(true);
-      })
-      .catch(() => {
+      } catch (error) {
         // The token was rejected (expired, tampered with, whatever) —
         // it's useless now, so throw it away and send them to log in.
         localStorage.removeItem("access_token");
         localStorage.removeItem("user");
         router.push("/login");
-      });
+      }
+    }
+
+    checkLogin();
   }, [role, router]);
 
   if (!VALID_ROLES.includes(role)) {

@@ -14,28 +14,29 @@ export default function ProviderDashboard() {
   const token = localStorage.getItem("access_token");
   const authHeader = { headers: { Authorization: `Bearer ${token}` } };
 
-  function loadApplications() {
-    return axios.get("/api/coordinator-providers/pending", authHeader).then((response) => {
-      setApplications(response.data);
-    });
+  async function loadApplications() {
+    const response = await axios.get("/api/coordinator-providers/pending", authHeader);
+    setApplications(response.data);
   }
 
   useEffect(() => {
-    // The logged in user (saved at login time) already knows which
-    // provider this account represents.
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    async function loadEverything() {
+      // The logged in user (saved at login time) already knows which
+      // provider this account represents.
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-    Promise.all([
-      loadApplications(),
-      axios.get("/api/providers").then((response) => {
-        const mine = response.data.find((p: any) => p.id === user.providerId);
-        if (mine) {
-          setProviderName(mine.name);
-        }
-      }),
-    ]).then(() => {
+      await loadApplications();
+
+      const providersResponse = await axios.get("/api/providers");
+      const mine = providersResponse.data.find((p: any) => p.id === user.providerId);
+      if (mine) {
+        setProviderName(mine.name);
+      }
+
       setLoading(false);
-    });
+    }
+
+    loadEverything();
   }, []);
 
   async function handleDecide(id: string, status: "approved" | "rejected") {
@@ -43,8 +44,8 @@ export default function ProviderDashboard() {
       await axios.patch(`/api/coordinator-providers/${id}/decide`, { status }, authHeader);
       await loadApplications();
       setActionError("");
-    } catch (err: any) {
-      setActionError(err.response?.data?.message || "Something went wrong, please try again");
+    } catch (err) {
+      setActionError("Something went wrong, please try again");
     }
   }
 

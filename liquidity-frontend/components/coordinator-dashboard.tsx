@@ -15,26 +15,28 @@ export default function CoordinatorDashboard() {
   const token = localStorage.getItem("access_token");
   const authHeader = { headers: { Authorization: `Bearer ${token}` } };
 
-  function loadRequests() {
-    return axios.get("/api/ecash-requests/pending", authHeader).then((response) => {
-      setRequests(response.data);
-    });
+  async function loadRequests() {
+    const response = await axios.get("/api/ecash-requests/pending", authHeader);
+    setRequests(response.data);
   }
 
-  function loadApplications() {
-    return axios.get("/api/coordinator-providers/mine", authHeader).then((response) => {
-      setApplications(response.data);
-    });
+  async function loadApplications() {
+    const response = await axios.get("/api/coordinator-providers/mine", authHeader);
+    setApplications(response.data);
   }
 
   useEffect(() => {
-    Promise.all([
-      loadRequests(),
-      loadApplications(),
-      axios.get("/api/providers").then((response) => setProviders(response.data)),
-    ]).then(() => {
+    async function loadEverything() {
+      await loadRequests();
+      await loadApplications();
+
+      const providersResponse = await axios.get("/api/providers");
+      setProviders(providersResponse.data);
+
       setLoading(false);
-    });
+    }
+
+    loadEverything();
   }, []);
 
   // Fulfilling a request on the real backend is actually two steps:
@@ -47,8 +49,8 @@ export default function CoordinatorDashboard() {
       await axios.patch(`/api/ecash-requests/${id}/fulfill`, {}, authHeader);
       await loadRequests();
       setActionError("");
-    } catch (err: any) {
-      setActionError(err.response?.data?.message || "Something went wrong, please try again");
+    } catch (err) {
+      setActionError("Something went wrong, please try again");
     }
   }
 
@@ -73,8 +75,8 @@ export default function CoordinatorDashboard() {
       await loadApplications();
       setApplyError("");
       setSelectedProvider("");
-    } catch (err: any) {
-      setApplyError(err.response?.data?.message || "Something went wrong, please try again");
+    } catch (err) {
+      setApplyError("Something went wrong, please try again");
     }
   }
 
