@@ -13,6 +13,8 @@ export class WalletsService {
     private cashDrawersRepo: Repository<CashDrawer>,
     @InjectRepository(Wallet)
     private walletsRepo: Repository<Wallet>,
+    @InjectRepository(CashTransaction)
+    private cashTransactionsRepo: Repository<CashTransaction>,
     // dataSource is what lets us do a "transaction" — see below.
     private dataSource: DataSource,
   ) {}
@@ -48,6 +50,17 @@ export class WalletsService {
       relations: ['provider'],
     });
     return { cashDrawer: drawer, ecashWallets: wallets };
+  }
+
+  // The agent's own cash-in/cash-out history, oldest first — this is
+  // what lets the frontend draw a "balance over time" chart instead
+  // of just showing the current numbers.
+  async myTransactions(agentId: string) {
+    return this.cashTransactionsRepo.find({
+      where: { agentId },
+      relations: ['provider'],
+      order: { createdAt: 'ASC' },
+    });
   }
 
   // ============================================================
