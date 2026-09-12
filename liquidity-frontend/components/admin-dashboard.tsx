@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
+import UsersIcon from "@heroicons/react/24/outline/UsersIcon";
+import BuildingOfficeIcon from "@heroicons/react/24/outline/BuildingOfficeIcon";
+import MapPinIcon from "@heroicons/react/24/outline/MapPinIcon";
+import WalletIcon from "@heroicons/react/24/outline/WalletIcon";
+import TitleCard from "@/components/title-card";
 
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
@@ -136,8 +141,38 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h2 className="text-lg font-semibold mb-3">Pending registrations</h2>
+      <div className="stats shadow w-full">
+        <div className="stat">
+          <div className="stat-figure text-primary">
+            <UsersIcon className="h-8 w-8" />
+          </div>
+          <div className="stat-title">Pending registrations</div>
+          <div className="stat-value">{pendingUsers.length}</div>
+        </div>
+        <div className="stat">
+          <div className="stat-figure text-primary">
+            <BuildingOfficeIcon className="h-8 w-8" />
+          </div>
+          <div className="stat-title">Pending join requests</div>
+          <div className="stat-value">{pendingApplications.length}</div>
+        </div>
+        <div className="stat">
+          <div className="stat-figure text-primary">
+            <MapPinIcon className="h-8 w-8" />
+          </div>
+          <div className="stat-title">Areas</div>
+          <div className="stat-value">{areas.length}</div>
+        </div>
+        <div className="stat">
+          <div className="stat-figure text-primary">
+            <WalletIcon className="h-8 w-8" />
+          </div>
+          <div className="stat-title">Providers</div>
+          <div className="stat-value">{providers.length}</div>
+        </div>
+      </div>
+
+      <TitleCard title="Pending registrations">
         <p className="text-sm text-base-content/60 -mt-2 mb-3">
           Agents, coordinators, and providers all start here — coordinator join
           requests to a specific provider are decided by that provider, not by
@@ -170,12 +205,9 @@ export default function AdminDashboard() {
             ))}
           </div>
         )}
-      </div>
+      </TitleCard>
 
-      <div>
-        <h2 className="text-lg font-semibold mb-3">
-          Pending coordinator join requests
-        </h2>
+      <TitleCard title="Pending coordinator join requests">
         {pendingApplications.length === 0 ? (
           <p className="text-base-content/60">
             Nothing waiting for a decision.
@@ -211,101 +243,95 @@ export default function AdminDashboard() {
             ))}
           </div>
         )}
-      </div>
+      </TitleCard>
 
       {actionError && <p className="text-error text-sm">{actionError}</p>}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <div className="card bg-base-100 shadow">
-          <div className="card-body">
-            <h2 className="card-title text-lg">Add an area</h2>
-            <p className="text-sm text-base-content/60">
-              Agents and coordinators need an area to pick when they sign up.
-            </p>
+        <TitleCard title="Add an area">
+          <p className="text-sm text-base-content/60">
+            Agents and coordinators need an area to pick when they sign up.
+          </p>
 
-            <form onSubmit={handleAddArea} className="flex flex-col gap-3 mt-2">
-              <fieldset className="fieldset">
-                <label className="label">Name</label>
-                <input
-                  type="text"
-                  value={areaName}
-                  onChange={(e) => setAreaName(e.target.value)}
-                  placeholder="Dhaka North"
-                  className="input w-full"
-                />
-              </fieldset>
+          <form onSubmit={handleAddArea} className="flex flex-col gap-3 mt-2">
+            <fieldset className="fieldset">
+              <label className="label">Name</label>
+              <input
+                type="text"
+                value={areaName}
+                onChange={(e) => setAreaName(e.target.value)}
+                placeholder="Dhaka North"
+                className="input w-full"
+              />
+            </fieldset>
 
-              <fieldset className="fieldset">
-                <label className="label">Region</label>
-                <input
-                  type="text"
-                  value={areaRegion}
-                  onChange={(e) => setAreaRegion(e.target.value)}
-                  placeholder="Dhaka"
-                  className="input w-full"
-                />
-              </fieldset>
+            <fieldset className="fieldset">
+              <label className="label">Region</label>
+              <input
+                type="text"
+                value={areaRegion}
+                onChange={(e) => setAreaRegion(e.target.value)}
+                placeholder="Dhaka"
+                className="input w-full"
+              />
+            </fieldset>
 
-              <button type="submit" className="btn btn-primary">
-                Add area
-              </button>
-              {areaError && <p className="text-error text-sm">{areaError}</p>}
-            </form>
+            <button type="submit" className="btn btn-primary">
+              Add area
+            </button>
+            {areaError && <p className="text-error text-sm">{areaError}</p>}
+          </form>
 
-            {areas.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-3">
-                {areas.map((area) => (
-                  <span key={area.id} className="badge badge-outline">
-                    {area.name}
-                  </span>
-                ))}
-              </div>
+          {areas.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              {areas.map((area) => (
+                <span key={area.id} className="badge badge-outline">
+                  {area.name}
+                </span>
+              ))}
+            </div>
+          )}
+        </TitleCard>
+
+        <TitleCard title="Add a provider">
+          <p className="text-sm text-base-content/60">
+            A "provider" role account needs to pick one of these when they
+            sign up.
+          </p>
+
+          <form
+            onSubmit={handleAddProvider}
+            className="flex flex-col gap-3 mt-2"
+          >
+            <fieldset className="fieldset">
+              <label className="label">Name</label>
+              <input
+                type="text"
+                value={providerName}
+                onChange={(e) => setProviderName(e.target.value)}
+                placeholder="bKash"
+                className="input w-full"
+              />
+            </fieldset>
+
+            <button type="submit" className="btn btn-primary">
+              Add provider
+            </button>
+            {providerError && (
+              <p className="text-error text-sm">{providerError}</p>
             )}
-          </div>
-        </div>
+          </form>
 
-        <div className="card bg-base-100 shadow">
-          <div className="card-body">
-            <h2 className="card-title text-lg">Add a provider</h2>
-            <p className="text-sm text-base-content/60">
-              A "provider" role account needs to pick one of these when they
-              sign up.
-            </p>
-
-            <form
-              onSubmit={handleAddProvider}
-              className="flex flex-col gap-3 mt-2"
-            >
-              <fieldset className="fieldset">
-                <label className="label">Name</label>
-                <input
-                  type="text"
-                  value={providerName}
-                  onChange={(e) => setProviderName(e.target.value)}
-                  placeholder="bKash"
-                  className="input w-full"
-                />
-              </fieldset>
-
-              <button type="submit" className="btn btn-primary">
-                Add provider
-              </button>
-              {providerError && (
-                <p className="text-error text-sm">{providerError}</p>
-              )}
-            </form>
-
-            {providers.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-3">
-                {providers.map((provider) => (
-                  <span key={provider.id} className="badge badge-outline">
-                    {provider.name}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+          {providers.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              {providers.map((provider) => (
+                <span key={provider.id} className="badge badge-outline">
+                  {provider.name}
+                </span>
+              ))}
+            </div>
+          )}
+        </TitleCard>
       </div>
     </div>
   );

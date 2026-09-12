@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
+import UserGroupIcon from "@heroicons/react/24/outline/UserGroupIcon";
+import TitleCard from "@/components/title-card";
 
 export default function ProviderDashboard() {
   const [loading, setLoading] = useState(true);
@@ -65,8 +67,17 @@ export default function ProviderDashboard() {
         </span>
       </div>
 
-      <div>
-        <h2 className="text-lg font-semibold mb-3">Coordinator join requests</h2>
+      <div className="stats shadow w-full">
+        <div className="stat">
+          <div className="stat-figure text-primary">
+            <UserGroupIcon className="h-8 w-8" />
+          </div>
+          <div className="stat-title">Coordinator join requests</div>
+          <div className="stat-value">{applications.length}</div>
+        </div>
+      </div>
+
+      <TitleCard title="Coordinator join requests">
         {applications.length === 0 ? (
           <p className="text-base-content/60">Nothing waiting for a decision.</p>
         ) : (
@@ -101,7 +112,7 @@ export default function ProviderDashboard() {
           </div>
         )}
         {actionError && <p className="text-error text-sm mt-1">{actionError}</p>}
-      </div>
+      </TitleCard>
     </div>
   );
 }

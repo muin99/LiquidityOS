@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
+import InboxArrowDownIcon from "@heroicons/react/24/outline/InboxArrowDownIcon";
+import BuildingOfficeIcon from "@heroicons/react/24/outline/BuildingOfficeIcon";
+import TitleCard from "@/components/title-card";
 
 export default function CoordinatorDashboard() {
   const [loading, setLoading] = useState(true);
@@ -90,10 +93,24 @@ export default function CoordinatorDashboard() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h2 className="text-lg font-semibold mb-3">
-          E-cash requests from agents
-        </h2>
+      <div className="stats shadow w-full">
+        <div className="stat">
+          <div className="stat-figure text-primary">
+            <InboxArrowDownIcon className="h-8 w-8" />
+          </div>
+          <div className="stat-title">Pending requests</div>
+          <div className="stat-value">{requests.length}</div>
+        </div>
+        <div className="stat">
+          <div className="stat-figure text-primary">
+            <BuildingOfficeIcon className="h-8 w-8" />
+          </div>
+          <div className="stat-title">My applications</div>
+          <div className="stat-value">{applications.length}</div>
+        </div>
+      </div>
+
+      <TitleCard title="E-cash requests from agents">
         <p className="text-sm text-base-content/60 -mt-2 mb-3">
           Only shows requests for providers you're an approved coordinator
           for.
@@ -138,50 +155,46 @@ export default function CoordinatorDashboard() {
           </div>
         )}
         {actionError && <p className="text-error text-sm mt-1">{actionError}</p>}
-      </div>
+      </TitleCard>
 
-      <div className="card bg-base-100 shadow">
-        <div className="card-body">
-          <h2 className="card-title text-lg">Apply to a provider</h2>
-          <p className="text-sm text-base-content/60">
-            Ask to become the coordinator for a provider. An admin (or that
-            provider) has to approve it before you can fulfill requests
-            for them.
-          </p>
+      <TitleCard title="Apply to a provider">
+        <p className="text-sm text-base-content/60">
+          Ask to become the coordinator for a provider. An admin (or that
+          provider) has to approve it before you can fulfill requests
+          for them.
+        </p>
 
-          <form
-            onSubmit={handleApply}
-            className="flex flex-col sm:flex-row gap-3 mt-2 items-start"
-          >
-            <fieldset className="fieldset w-full sm:w-40">
-              <label className="label">Provider</label>
-              <select
-                value={selectedProvider}
-                onChange={(e) => setSelectedProvider(e.target.value)}
-                className="select w-full"
-              >
-                <option value="">Pick a provider</option>
-                {providers.map((provider) => (
-                  <option key={provider.id} value={provider.id}>
-                    {provider.name}
-                  </option>
-                ))}
-              </select>
-            </fieldset>
+        <form
+          onSubmit={handleApply}
+          className="flex flex-col sm:flex-row gap-3 mt-2 items-start"
+        >
+          <fieldset className="fieldset w-full sm:w-40">
+            <label className="label">Provider</label>
+            <select
+              value={selectedProvider}
+              onChange={(e) => setSelectedProvider(e.target.value)}
+              className="select w-full"
+            >
+              <option value="">Pick a provider</option>
+              {providers.map((provider) => (
+                <option key={provider.id} value={provider.id}>
+                  {provider.name}
+                </option>
+              ))}
+            </select>
+          </fieldset>
 
-            <button type="submit" className="btn btn-primary sm:mt-6">
-              Apply
-            </button>
-          </form>
+          <button type="submit" className="btn btn-primary sm:mt-6">
+            Apply
+          </button>
+        </form>
 
-          {applyError && (
-            <p className="text-error text-sm mt-1">{applyError}</p>
-          )}
-        </div>
-      </div>
+        {applyError && (
+          <p className="text-error text-sm mt-1">{applyError}</p>
+        )}
+      </TitleCard>
 
-      <div>
-        <h2 className="text-lg font-semibold mb-3">My provider applications</h2>
+      <TitleCard title="My provider applications">
         {applications.length === 0 ? (
           <p className="text-base-content/60">You haven't applied to any providers yet.</p>
         ) : (
@@ -194,7 +207,7 @@ export default function CoordinatorDashboard() {
             ))}
           </div>
         )}
-      </div>
+      </TitleCard>
     </div>
   );
 }

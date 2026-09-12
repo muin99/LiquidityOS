@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "axios": "^1.20.0",
     "daisyui": "^5.7.32",
     "next": "16.3.4",
