@@ -25,17 +25,28 @@ Requests to `/api/...` are quietly forwarded to the backend by the
   "pending" until an admin approves it)
 - `/dashboard/[role]` — a dynamic route; `/dashboard/agent`,
   `/dashboard/coordinator`, `/dashboard/provider`, and `/dashboard/admin`
-  all use the same page file, which checks who's logged in (see
-  `lib/auth.ts`) and shows the matching dashboard component
+  all use the same page file, which checks who's logged in and shows the
+  matching dashboard component
+
+## How login works
+
+On purpose, there's no shared auth helper file or axios wrapper — each
+component just does this itself, right where it's needed:
+
+```ts
+const token = localStorage.getItem("access_token");
+axios.get("/api/wallets/me", { headers: { Authorization: `Bearer ${token}` } });
+```
+
+`/login` saves `access_token` and `user` (as JSON) into `localStorage`
+after a successful `POST /api/auth/login`. Every other page/component that
+needs to know who's logged in just reads those two keys straight out of
+`localStorage` again — no context, no interceptor, no helper functions.
 
 ## What's where
 
 - `app/` — one folder per route (App Router)
 - `components/` — one file per dashboard, plus the shared navbar
-- `lib/api.ts` — one shared axios instance, points at `/api` and
-  automatically attaches the saved login token to every request
-- `lib/auth.ts` — plain functions for saving/reading/clearing the logged
-  in user in `localStorage` (no React context, just functions)
 - `lib/validation.ts` — zod schemas for the login/register forms
 
 ## Stack
