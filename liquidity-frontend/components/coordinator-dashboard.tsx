@@ -120,7 +120,7 @@ export default function CoordinatorDashboard() {
         </div>
       </div>
 
-      <TitleCard title="E-cash requests from agents">
+      <TitleCard title="Liquidity requests from agents">
         <p className="text-sm text-base-content/60 -mt-2 mb-3">
           Only shows requests for providers you're an approved coordinator
           for.
@@ -135,6 +135,7 @@ export default function CoordinatorDashboard() {
                   <th>Agent</th>
                   <th>Provider</th>
                   <th>Amount</th>
+                  <th>Need</th>
                   <th>Status</th>
                   <th>Requested</th>
                   <th></th>
@@ -146,6 +147,7 @@ export default function CoordinatorDashboard() {
                     <td>{req.agent.fullName}</td>
                     <td>{req.provider.name}</td>
                     <td>৳{req.amount}</td>
+                    <td>{req.type === "physical_cash" ? "Physical cash" : "E-cash"}</td>
                     <td>
                       <span className={`badge ${statusBadgeClass(req.status)} capitalize`}>
                         {req.status}

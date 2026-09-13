@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsPositive, IsString } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsNumber, IsPositive, IsString } from 'class-validator';
+import { RequestType } from '../../common/enums/request-type.enum';
 
 export class CreateEcashRequestDto {
   @ApiProperty()
@@ -11,4 +12,8 @@ export class CreateEcashRequestDto {
   @IsNumber()
   @IsPositive()
   amount: number;
+
+  @ApiProperty({ enum: RequestType })
+  @IsEnum(RequestType)
+  type: RequestType;
 }
