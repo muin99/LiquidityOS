@@ -23,6 +23,13 @@ export class WalletsController {
     return this.walletsService.myWallets(user.id);
   }
 
+  // The agent's own cash-in/cash-out history, so the dashboard can
+  // chart the drawer/wallet balance moving over time.
+  @Get('transactions')
+  myTransactions(@CurrentUser() user: { id: string }) {
+    return this.walletsService.myTransactions(user.id);
+  }
+
   @Post('cash-in')
   cashIn(@CurrentUser() user: { id: string }, @Body() dto: CashMoveDto) {
     return this.walletsService.cashIn(user.id, dto.providerId, dto.amount);
