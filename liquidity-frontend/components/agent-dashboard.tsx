@@ -18,6 +18,9 @@ export default function AgentDashboard() {
   const [providerApplications, setProviderApplications] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
 
+  // which tab is showing right now
+  const [tab, setTab] = useState("wallets");
+
   // Every request that needs to prove who we are just sends this
   // header by hand, no auto-attaching magic behind the scenes.
   const token = localStorage.getItem("access_token");
@@ -234,8 +237,17 @@ export default function AgentDashboard() {
   const inputClass =
     "w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
 
+  // picks the right look for whichever tab button is active right now
+  function tabClass(name: string) {
+    const base = "flex items-center border-b-2 px-1 py-3 text-sm font-medium";
+    if (tab === name) {
+      return `${base} border-blue-500 font-semibold text-blue-400`;
+    }
+    return `${base} border-transparent text-gray-400 hover:border-gray-600 hover:text-gray-200`;
+  }
+
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       <div className="grid grid-cols-1 gap-px overflow-hidden rounded-lg bg-gray-700 shadow sm:grid-cols-2 lg:grid-cols-4">
         <div className="bg-gray-800 p-4">
           <div className="flex items-center justify-between">
@@ -263,288 +275,322 @@ export default function AgentDashboard() {
         </div>
       </div>
 
-      <TitleCard title="E-cash wallets">
-        {wallets.length === 0 ? (
-          <p className="text-gray-400">
-            No e-cash yet — ask a coordinator to send some using the form below.
-          </p>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {wallets.map((wallet) => (
-              <div key={wallet.id} className="rounded-lg bg-gray-900 p-4 shadow">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400">{wallet.provider.name}</span>
-                  <WalletIcon className="h-6 w-6 text-blue-400" />
-                </div>
-                <div className="mt-1 text-2xl font-bold text-gray-100">৳{wallet.balance}</div>
-              </div>
-            ))}
-          </div>
-        )}
-      </TitleCard>
-
-      <TitleCard title="My provider applications">
-        <p className="-mt-2 mb-3 text-sm text-gray-400">
-          Apply to a provider first. You can request and transact only with providers that approve you.
-        </p>
-        <form onSubmit={applyToProvider} className="flex flex-col items-start gap-3 sm:flex-row">
-          <select
-            value={selectedProvider}
-            onChange={(e) => setSelectedProvider(e.target.value)}
-            className={`${inputClass} sm:w-64`}
-          >
-            <option value="">Pick a provider</option>
-            {allProviders.map((provider) => (
-              <option key={provider.id} value={provider.id}>{provider.name}</option>
-            ))}
-          </select>
-          <button
-            type="submit"
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-          >
-            Apply
+      <div className="border-b border-gray-700">
+        <nav className="-mb-px flex gap-6 overflow-x-auto">
+          <button onClick={() => setTab("wallets")} className={tabClass("wallets")}>
+            Wallets
           </button>
-        </form>
-        {providerError && <p className="mt-2 text-sm text-red-400">{providerError}</p>}
-        {providerApplications.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {providerApplications.map((application) => (
-              <span
-                key={application.id}
-                className="inline-flex items-center gap-2 rounded-full border border-gray-600 px-3 py-1 text-sm text-gray-300"
-              >
-                {application.provider.name}
-                <span className="capitalize text-gray-500">({application.status})</span>
+          <button onClick={() => setTab("move")} className={tabClass("move")}>
+            Cash in / out
+          </button>
+          <button onClick={() => setTab("requests")} className={tabClass("requests")}>
+            Requests
+            {pendingCount > 0 && (
+              <span className="ml-2 inline-flex items-center justify-center rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white">
+                {pendingCount}
               </span>
-            ))}
+            )}
+          </button>
+          <button onClick={() => setTab("history")} className={tabClass("history")}>
+            History
+          </button>
+        </nav>
+      </div>
+
+      {tab === "wallets" && (
+        <div className="flex flex-col gap-8">
+          <TitleCard title="E-cash wallets">
+            {wallets.length === 0 ? (
+              <p className="text-gray-400">
+                No e-cash yet — ask a coordinator to send some using the form below.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {wallets.map((wallet) => (
+                  <div key={wallet.id} className="rounded-lg bg-gray-900 p-4 shadow">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-400">{wallet.provider.name}</span>
+                      <WalletIcon className="h-6 w-6 text-blue-400" />
+                    </div>
+                    <div className="mt-1 text-2xl font-bold text-gray-100">৳{wallet.balance}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TitleCard>
+
+          <TitleCard title="My provider applications">
+            <p className="-mt-2 mb-3 text-sm text-gray-400">
+              Apply to a provider first. You can request and transact only with providers that approve you.
+            </p>
+            <form onSubmit={applyToProvider} className="flex flex-col items-start gap-3 sm:flex-row">
+              <select
+                value={selectedProvider}
+                onChange={(e) => setSelectedProvider(e.target.value)}
+                className={`${inputClass} sm:w-64`}
+              >
+                <option value="">Pick a provider</option>
+                {allProviders.map((provider) => (
+                  <option key={provider.id} value={provider.id}>{provider.name}</option>
+                ))}
+              </select>
+              <button
+                type="submit"
+                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+              >
+                Apply
+              </button>
+            </form>
+            {providerError && <p className="mt-2 text-sm text-red-400">{providerError}</p>}
+            {providerApplications.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {providerApplications.map((application) => (
+                  <span
+                    key={application.id}
+                    className="inline-flex items-center gap-2 rounded-full border border-gray-600 px-3 py-1 text-sm text-gray-300"
+                  >
+                    {application.provider.name}
+                    <span className="capitalize text-gray-500">({application.status})</span>
+                  </span>
+                ))}
+              </div>
+            )}
+          </TitleCard>
+        </div>
+      )}
+
+      {tab === "move" && (
+        <TitleCard title="Cash in / Cash out">
+          <div>
+            <p className="text-sm text-gray-400">
+              Cash-in moves money from e-cash into your drawer. Cash-out
+              moves it back the other way.
+            </p>
+
+            <form onSubmit={handleMoveSubmit} className="mt-2 flex flex-col items-start gap-3 sm:flex-row">
+              <div className="w-full sm:w-36">
+                <label className="mb-1 block text-sm font-medium text-gray-300">Type</label>
+                <select
+                  name="type"
+                  value={moveData.type}
+                  onChange={handleMoveChange}
+                  className={inputClass}
+                >
+                  <option value="cash-in">Cash in</option>
+                  <option value="cash-out">Cash out</option>
+                </select>
+              </div>
+
+              <div className="w-full sm:w-40">
+                <label className="mb-1 block text-sm font-medium text-gray-300">Provider</label>
+                <select
+                  name="providerId"
+                  value={moveData.providerId}
+                  onChange={handleMoveChange}
+                  className={inputClass}
+                >
+                  <option value="">Pick a provider</option>
+                  {providers.map((provider) => (
+                    <option key={provider.id} value={provider.id}>
+                      {provider.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="w-full sm:w-40">
+                <label className="mb-1 block text-sm font-medium text-gray-300">Amount</label>
+                <input
+                  type="number"
+                  name="amount"
+                  value={moveData.amount}
+                  onChange={handleMoveChange}
+                  placeholder="1000"
+                  className={inputClass}
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 sm:mt-6"
+              >
+                Confirm
+              </button>
+            </form>
+
+            {moveError && <p className="mt-1 text-sm text-red-400">{moveError}</p>}
           </div>
-        )}
-      </TitleCard>
+        </TitleCard>
+      )}
 
-      <TitleCard title="Cash in / Cash out">
-        <div>
-          <p className="text-sm text-gray-400">
-            Cash-in moves money from e-cash into your drawer. Cash-out
-            moves it back the other way.
-          </p>
+      {tab === "requests" && (
+        <div className="flex flex-col gap-8">
+          <TitleCard title="Request liquidity">
+            <div>
+              <p className="text-sm text-gray-400">
+                Choose whether you need e-cash or physical cash.
+              </p>
 
-          <form onSubmit={handleMoveSubmit} className="mt-2 flex flex-col items-start gap-3 sm:flex-row">
-            <div className="w-full sm:w-36">
-              <label className="mb-1 block text-sm font-medium text-gray-300">Type</label>
-              <select
-                name="type"
-                value={moveData.type}
-                onChange={handleMoveChange}
-                className={inputClass}
-              >
-                <option value="cash-in">Cash in</option>
-                <option value="cash-out">Cash out</option>
-              </select>
+              <form onSubmit={handleSubmit} className="mt-2 flex flex-col items-start gap-3 sm:flex-row">
+                <div className="w-full sm:w-40">
+                  <label className="mb-1 block text-sm font-medium text-gray-300">I need</label>
+                  <select
+                    name="type"
+                    value={formData.type}
+                    onChange={handleChange}
+                    className={inputClass}
+                  >
+                    <option value="e_cash">E-cash</option>
+                    <option value="physical_cash">Physical cash</option>
+                  </select>
+                </div>
+
+                <div className="w-full sm:w-40">
+                  <label className="mb-1 block text-sm font-medium text-gray-300">Provider</label>
+                  <select
+                    name="providerId"
+                    value={formData.providerId}
+                    onChange={handleChange}
+                    className={inputClass}
+                  >
+                    <option value="">Pick a provider</option>
+                    {providers.map((provider) => (
+                      <option key={provider.id} value={provider.id}>
+                        {provider.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="w-full sm:w-40">
+                  <label className="mb-1 block text-sm font-medium text-gray-300">Amount</label>
+                  <input
+                    type="number"
+                    name="amount"
+                    value={formData.amount}
+                    onChange={handleChange}
+                    placeholder="5000"
+                    className={inputClass}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 sm:mt-6"
+                >
+                  Send request
+                </button>
+              </form>
+
+              {error && <p className="mt-1 text-sm text-red-400">{error}</p>}
             </div>
+          </TitleCard>
 
-            <div className="w-full sm:w-40">
-              <label className="mb-1 block text-sm font-medium text-gray-300">Provider</label>
-              <select
-                name="providerId"
-                value={moveData.providerId}
-                onChange={handleMoveChange}
-                className={inputClass}
-              >
-                <option value="">Pick a provider</option>
-                {providers.map((provider) => (
-                  <option key={provider.id} value={provider.id}>
-                    {provider.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="w-full sm:w-40">
-              <label className="mb-1 block text-sm font-medium text-gray-300">Amount</label>
-              <input
-                type="number"
-                name="amount"
-                value={moveData.amount}
-                onChange={handleMoveChange}
-                placeholder="1000"
-                className={inputClass}
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 sm:mt-6"
-            >
-              Confirm
-            </button>
-          </form>
-
-          {moveError && <p className="mt-1 text-sm text-red-400">{moveError}</p>}
+          <TitleCard title="My liquidity requests">
+            {requests.length === 0 ? (
+              <p className="text-gray-400">You haven't asked for e-cash yet.</p>
+            ) : (
+              <div className="overflow-x-auto rounded-lg border border-gray-700 bg-gray-800">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr>
+                      <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Provider</th>
+                      <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Amount</th>
+                      <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Type</th>
+                      <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Status</th>
+                      <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400"></th>
+                      <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Requested</th>
+                      <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Fulfilled</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {requests.map((req) => (
+                      <tr key={req.id} className="odd:bg-gray-800 even:bg-gray-900/40">
+                        <td className="border-b border-gray-700 px-4 py-2">{req.provider.name}</td>
+                        <td className="border-b border-gray-700 px-4 py-2">৳{req.amount}</td>
+                        <td className="border-b border-gray-700 px-4 py-2">
+                          {req.type === "physical_cash" ? "Physical cash" : "E-cash"}
+                        </td>
+                        <td className="border-b border-gray-700 px-4 py-2">
+                          <span
+                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${statusBadgeClass(req.status)}`}
+                          >
+                            {req.status}
+                          </span>
+                        </td>
+                        <td className="border-b border-gray-700 px-4 py-2">
+                          {req.status === "pending" && (
+                            <button
+                              onClick={() => cancelRequest(req.id)}
+                              className="rounded-md px-2.5 py-1 text-xs font-semibold text-red-400 hover:bg-red-900/30"
+                            >
+                              Cancel
+                            </button>
+                          )}
+                        </td>
+                        <td className="border-b border-gray-700 px-4 py-2">
+                          {new Date(req.requestedAt).toLocaleString()}
+                        </td>
+                        <td className="border-b border-gray-700 px-4 py-2">
+                          {req.fulfilledAt ? new Date(req.fulfilledAt).toLocaleString() : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </TitleCard>
         </div>
-      </TitleCard>
+      )}
 
-      <TitleCard title="Request liquidity">
-        <div>
-          <p className="text-sm text-gray-400">
-            Choose whether you need e-cash or physical cash.
-          </p>
-
-          <form onSubmit={handleSubmit} className="mt-2 flex flex-col items-start gap-3 sm:flex-row">
-            <div className="w-full sm:w-40">
-              <label className="mb-1 block text-sm font-medium text-gray-300">I need</label>
-              <select
-                name="type"
-                value={formData.type}
-                onChange={handleChange}
-                className={inputClass}
-              >
-                <option value="e_cash">E-cash</option>
-                <option value="physical_cash">Physical cash</option>
-              </select>
-            </div>
-
-            <div className="w-full sm:w-40">
-              <label className="mb-1 block text-sm font-medium text-gray-300">Provider</label>
-              <select
-                name="providerId"
-                value={formData.providerId}
-                onChange={handleChange}
-                className={inputClass}
-              >
-                <option value="">Pick a provider</option>
-                {providers.map((provider) => (
-                  <option key={provider.id} value={provider.id}>
-                    {provider.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="w-full sm:w-40">
-              <label className="mb-1 block text-sm font-medium text-gray-300">Amount</label>
-              <input
-                type="number"
-                name="amount"
-                value={formData.amount}
-                onChange={handleChange}
-                placeholder="5000"
-                className={inputClass}
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 sm:mt-6"
-            >
-              Send request
-            </button>
-          </form>
-
-          {error && <p className="mt-1 text-sm text-red-400">{error}</p>}
-        </div>
-      </TitleCard>
-
-      <TitleCard title="My liquidity requests">
-        {requests.length === 0 ? (
-          <p className="text-gray-400">You haven't asked for e-cash yet.</p>
-        ) : (
-          <div className="overflow-x-auto rounded-lg border border-gray-700 bg-gray-800">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr>
-                  <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Provider</th>
-                  <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Amount</th>
-                  <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Type</th>
-                  <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Status</th>
-                  <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400"></th>
-                  <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Requested</th>
-                  <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Fulfilled</th>
-                </tr>
-              </thead>
-              <tbody>
-                {requests.map((req) => (
-                  <tr key={req.id} className="odd:bg-gray-800 even:bg-gray-900/40">
-                    <td className="border-b border-gray-700 px-4 py-2">{req.provider.name}</td>
-                    <td className="border-b border-gray-700 px-4 py-2">৳{req.amount}</td>
-                    <td className="border-b border-gray-700 px-4 py-2">
-                      {req.type === "physical_cash" ? "Physical cash" : "E-cash"}
-                    </td>
-                    <td className="border-b border-gray-700 px-4 py-2">
-                      <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${statusBadgeClass(req.status)}`}
-                      >
-                        {req.status}
-                      </span>
-                    </td>
-                    <td className="border-b border-gray-700 px-4 py-2">
-                      {req.status === "pending" && (
-                        <button
-                          onClick={() => cancelRequest(req.id)}
-                          className="rounded-md px-2.5 py-1 text-xs font-semibold text-red-400 hover:bg-red-900/30"
+      {tab === "history" && (
+        <TitleCard title="Transaction history">
+          {transactions.length === 0 ? (
+            <p className="text-gray-400">No cash-in/cash-out yet.</p>
+          ) : (
+            <div className="overflow-x-auto rounded-lg border border-gray-700 bg-gray-800">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr>
+                    <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Date</th>
+                    <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Type</th>
+                    <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Provider</th>
+                    <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Amount</th>
+                    <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Drawer after</th>
+                    <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Wallet after</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...transactions].reverse().map((tx) => (
+                    <tr key={tx.id} className="odd:bg-gray-800 even:bg-gray-900/40">
+                      <td className="border-b border-gray-700 px-4 py-2">
+                        {new Date(tx.createdAt).toLocaleString()}
+                      </td>
+                      <td className="border-b border-gray-700 px-4 py-2">
+                        <span
+                          className={
+                            "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize " +
+                            (tx.type === "cash_in"
+                              ? "bg-green-900/40 text-green-300"
+                              : "bg-amber-900/40 text-amber-300")
+                          }
                         >
-                          Cancel
-                        </button>
-                      )}
-                    </td>
-                    <td className="border-b border-gray-700 px-4 py-2">
-                      {new Date(req.requestedAt).toLocaleString()}
-                    </td>
-                    <td className="border-b border-gray-700 px-4 py-2">
-                      {req.fulfilledAt ? new Date(req.fulfilledAt).toLocaleString() : "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </TitleCard>
-
-      <TitleCard title="Transaction history">
-        {transactions.length === 0 ? (
-          <p className="text-gray-400">No cash-in/cash-out yet.</p>
-        ) : (
-          <div className="overflow-x-auto rounded-lg border border-gray-700 bg-gray-800">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr>
-                  <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Date</th>
-                  <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Type</th>
-                  <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Provider</th>
-                  <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Amount</th>
-                  <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Drawer after</th>
-                  <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Wallet after</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[...transactions].reverse().map((tx) => (
-                  <tr key={tx.id} className="odd:bg-gray-800 even:bg-gray-900/40">
-                    <td className="border-b border-gray-700 px-4 py-2">
-                      {new Date(tx.createdAt).toLocaleString()}
-                    </td>
-                    <td className="border-b border-gray-700 px-4 py-2">
-                      <span
-                        className={
-                          "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize " +
-                          (tx.type === "cash_in"
-                            ? "bg-green-900/40 text-green-300"
-                            : "bg-amber-900/40 text-amber-300")
-                        }
-                      >
-                        {tx.type === "cash_in" ? "Cash in" : "Cash out"}
-                      </span>
-                    </td>
-                    <td className="border-b border-gray-700 px-4 py-2">{tx.provider.name}</td>
-                    <td className="border-b border-gray-700 px-4 py-2">৳{tx.amount}</td>
-                    <td className="border-b border-gray-700 px-4 py-2">৳{tx.drawerBalanceAfter}</td>
-                    <td className="border-b border-gray-700 px-4 py-2">৳{tx.walletBalanceAfter}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </TitleCard>
+                          {tx.type === "cash_in" ? "Cash in" : "Cash out"}
+                        </span>
+                      </td>
+                      <td className="border-b border-gray-700 px-4 py-2">{tx.provider.name}</td>
+                      <td className="border-b border-gray-700 px-4 py-2">৳{tx.amount}</td>
+                      <td className="border-b border-gray-700 px-4 py-2">৳{tx.drawerBalanceAfter}</td>
+                      <td className="border-b border-gray-700 px-4 py-2">৳{tx.walletBalanceAfter}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </TitleCard>
+      )}
     </div>
   );
 }
