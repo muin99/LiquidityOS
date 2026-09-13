@@ -3,4 +3,7 @@
 export enum TransactionType {
   CASH_IN = 'cash_in',
   CASH_OUT = 'cash_out',
+  LIQUIDITY_SWAP = 'liquidity_swap',
+  PROVIDER_TOP_UP = 'provider_top_up',
+  PROVIDER_SUPPLY = 'provider_supply',
 }

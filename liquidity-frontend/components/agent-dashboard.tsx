@@ -14,6 +14,8 @@ export default function AgentDashboard() {
   const [wallets, setWallets] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
   const [providers, setProviders] = useState<any[]>([]);
+  const [allProviders, setAllProviders] = useState<any[]>([]);
+  const [providerApplications, setProviderApplications] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
 
   // Every request that needs to prove who we are just sends this
@@ -42,14 +44,24 @@ export default function AgentDashboard() {
     setTransactions(response.data);
   }
 
+  async function loadProviderApplications() {
+    const [approvedResponse, mineResponse, allResponse] = await Promise.all([
+      axios.get("/api/agent-providers/approved", authHeader),
+      axios.get("/api/agent-providers/mine", authHeader),
+      axios.get("/api/providers"),
+    ]);
+    setProviders(approvedResponse.data.map((item: any) => item.provider));
+    setProviderApplications(mineResponse.data);
+    setAllProviders(allResponse.data);
+  }
+
   useEffect(() => {
     async function loadEverything() {
       await loadWallets();
       await loadRequests();
       await loadTransactions();
 
-      const providersResponse = await axios.get("/api/providers");
-      setProviders(providersResponse.data);
+      await loadProviderApplications();
 
       setLoading(false);
     }
@@ -153,6 +165,40 @@ export default function AgentDashboard() {
     }
   }
 
+  async function cancelRequest(id: string) {
+    try {
+      await axios.patch(`/api/ecash-requests/${id}/cancel`, {}, authHeader);
+      await loadRequests();
+      setError("");
+    } catch (err) {
+      setError("This request can no longer be cancelled");
+    }
+  }
+
+  const [selectedProvider, setSelectedProvider] = useState("");
+  const [providerError, setProviderError] = useState("");
+
+  async function applyToProvider(e: any) {
+    e.preventDefault();
+    if (!selectedProvider) {
+      setProviderError("Please pick a provider");
+      return;
+    }
+
+    try {
+      await axios.post(
+        "/api/agent-providers/apply",
+        { providerId: selectedProvider },
+        authHeader,
+      );
+      await loadProviderApplications();
+      setSelectedProvider("");
+      setProviderError("");
+    } catch (err) {
+      setProviderError("You already applied to this provider");
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center py-24">
@@ -231,6 +277,36 @@ export default function AgentDashboard() {
                   <div className="stat-value">৳{wallet.balance}</div>
                 </div>
               </div>
+            ))}
+          </div>
+        )}
+      </TitleCard>
+
+      <TitleCard title="My provider applications">
+        <p className="text-sm text-base-content/60 -mt-2 mb-3">
+          Apply to a provider first. You can request and transact only with providers that approve you.
+        </p>
+        <form onSubmit={applyToProvider} className="flex flex-col sm:flex-row gap-3 items-start">
+          <select
+            value={selectedProvider}
+            onChange={(e) => setSelectedProvider(e.target.value)}
+            className="select w-full sm:w-64"
+          >
+            <option value="">Pick a provider</option>
+            {allProviders.map((provider) => (
+              <option key={provider.id} value={provider.id}>{provider.name}</option>
+            ))}
+          </select>
+          <button type="submit" className="btn btn-primary">Apply</button>
+        </form>
+        {providerError && <p className="text-error text-sm mt-2">{providerError}</p>}
+        {providerApplications.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            {providerApplications.map((application) => (
+              <span key={application.id} className="badge badge-lg gap-2">
+                {application.provider.name}
+                <span className="opacity-60 capitalize">({application.status})</span>
+              </span>
             ))}
           </div>
         )}
@@ -365,6 +441,7 @@ export default function AgentDashboard() {
                   <th>Amount</th>
                   <th>Type</th>
                   <th>Status</th>
+                  <th></th>
                   <th>Requested</th>
                   <th>Fulfilled</th>
                 </tr>
@@ -375,11 +452,21 @@ export default function AgentDashboard() {
                     <td>{req.provider.name}</td>
                     <td>৳{req.amount}</td>
                     <td>{req.type === "physical_cash" ? "Physical cash" : "E-cash"}</td>
-                    <td>
-                      <span className={`badge ${statusBadgeClass(req.status)} capitalize`}>
-                        {req.status}
-                      </span>
-                    </td>
+                  <td>
+                    <span className={`badge ${statusBadgeClass(req.status)} capitalize`}>
+                      {req.status}
+                    </span>
+                  </td>
+                  <td>
+                    {req.status === "pending" && (
+                      <button
+                        onClick={() => cancelRequest(req.id)}
+                        className="btn btn-ghost btn-error btn-sm"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </td>
                     <td>{new Date(req.requestedAt).toLocaleString()}</td>
                     <td>{req.fulfilledAt ? new Date(req.fulfilledAt).toLocaleString() : "—"}</td>
                   </tr>

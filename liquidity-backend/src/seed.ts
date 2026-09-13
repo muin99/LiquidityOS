@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { AppModule } from './app.module';
 import { Area } from './areas/area.entity';
 import { UserRole } from './common/enums/user-role.enum';
@@ -12,6 +12,9 @@ import { CashDrawer } from './wallets/cash-drawer.entity';
 import { CashTransaction } from './wallets/cash-transaction.entity';
 import { Wallet } from './wallets/wallet.entity';
 import { User } from './users/user.entity';
+import { CoordinatorProvider } from './coordinator-providers/coordinator-provider.entity';
+import { ApplicationStatus } from './common/enums/application-status.enum';
+import { AgentProvider } from './agent-providers/agent-provider.entity';
 
 const demoPassword = 'DemoPass123!';
 
@@ -51,6 +54,12 @@ async function seed() {
     getRepositoryToken(Provider),
   );
   const usersRepo = app.get<Repository<User>>(getRepositoryToken(User));
+  const coordinatorProvidersRepo = app.get<Repository<CoordinatorProvider>>(
+    getRepositoryToken(CoordinatorProvider),
+  );
+  const agentProvidersRepo = app.get<Repository<AgentProvider>>(
+    getRepositoryToken(AgentProvider),
+  );
   const walletsRepo = app.get<Repository<Wallet>>(getRepositoryToken(Wallet));
   const cashDrawersRepo = app.get<Repository<CashDrawer>>(
     getRepositoryToken(CashDrawer),
@@ -101,6 +110,30 @@ async function seed() {
       areaId: area.id,
     });
 
+    let coordinatorProvider = await coordinatorProvidersRepo.findOne({
+      where: { coordinatorId: coordinator.id, providerId: provider.id },
+    });
+    if (!coordinatorProvider) {
+      coordinatorProvider = coordinatorProvidersRepo.create({
+        coordinatorId: coordinator.id,
+        providerId: provider.id,
+        status: ApplicationStatus.APPROVED,
+      });
+      await coordinatorProvidersRepo.save(coordinatorProvider);
+    }
+
+    let agentProvider = await agentProvidersRepo.findOne({
+      where: { agentId: agent.id, providerId: provider.id },
+    });
+    if (!agentProvider) {
+      agentProvider = agentProvidersRepo.create({
+        agentId: agent.id,
+        providerId: provider.id,
+        status: ApplicationStatus.APPROVED,
+      });
+      await agentProvidersRepo.save(agentProvider);
+    }
+
     let wallet = await walletsRepo.findOne({
       where: { agentId: agent.id, providerId: provider.id },
     });
@@ -120,6 +153,50 @@ async function seed() {
     if (!drawer) {
       drawer = await cashDrawersRepo.save(
         cashDrawersRepo.create({ agentId: agent.id, balance: 12_500 }),
+      );
+    }
+
+    let coordinatorWallet = await walletsRepo.findOne({
+      where: { coordinatorId: coordinator.id, providerId: provider.id },
+    });
+    if (!coordinatorWallet) {
+      await walletsRepo.save(
+        walletsRepo.create({
+          coordinatorId: coordinator.id,
+          providerId: provider.id,
+          balance: 50_000,
+        }),
+      );
+    }
+
+    let coordinatorDrawer = await cashDrawersRepo.findOne({
+      where: { coordinatorId: coordinator.id },
+    });
+    if (!coordinatorDrawer) {
+      await cashDrawersRepo.save(
+        cashDrawersRepo.create({ coordinatorId: coordinator.id, balance: 50_000 }),
+      );
+    }
+
+    const providerReserve = await walletsRepo.findOne({
+      where: {
+        providerId: provider.id,
+        agentId: IsNull(),
+        coordinatorId: IsNull(),
+      },
+    });
+    if (!providerReserve) {
+      await walletsRepo.save(
+        walletsRepo.create({ providerId: provider.id, balance: 200_000 }),
+      );
+    }
+
+    const providerCashReserve = await cashDrawersRepo.findOne({
+      where: { providerId: provider.id },
+    });
+    if (!providerCashReserve) {
+      await cashDrawersRepo.save(
+        cashDrawersRepo.create({ providerId: provider.id, balance: 200_000 }),
       );
     }
 

@@ -8,6 +8,7 @@ import { ProvidersModule } from './providers/providers.module';
 import { WalletsModule } from './wallets/wallets.module';
 import { CoordinatorProvidersModule } from './coordinator-providers/coordinator-providers.module';
 import { EcashRequestsModule } from './ecash-requests/ecash-requests.module';
+import { AgentProvidersModule } from './agent-providers/agent-providers.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { EcashRequestsModule } from './ecash-requests/ecash-requests.module';
     WalletsModule,
     CoordinatorProvidersModule,
     EcashRequestsModule,
+    AgentProvidersModule,
   ],
 })
 export class AppModule {}

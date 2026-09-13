@@ -30,6 +30,12 @@ export class CoordinatorProvidersController {
     return this.service.myApplications(user.id);
   }
 
+  @Roles(UserRole.PROVIDER)
+  @Get('approved')
+  approved(@CurrentUser() user: { providerId?: string }) {
+    return this.service.approvedApplications(user.providerId as string);
+  }
+
   // A provider sees only requests to join THEM. An admin sees every
   // pending application, for every provider.
   @Roles(UserRole.PROVIDER, UserRole.ADMIN)

@@ -9,10 +9,13 @@ import { DataSource, In, Repository } from 'typeorm';
 import { EcashRequest } from './ecash-request.entity';
 import { Wallet } from '../wallets/wallet.entity';
 import { CashDrawer } from '../wallets/cash-drawer.entity';
+import { CashTransaction } from '../wallets/cash-transaction.entity';
 import { CoordinatorProvider } from '../coordinator-providers/coordinator-provider.entity';
 import { RequestStatus } from '../common/enums/request-status.enum';
 import { ApplicationStatus } from '../common/enums/application-status.enum';
 import { RequestType } from '../common/enums/request-type.enum';
+import { TransactionType } from '../common/enums/transaction-type.enum';
+import { AgentProvider } from '../agent-providers/agent-provider.entity';
 
 @Injectable()
 export class EcashRequestsService {
@@ -21,16 +24,25 @@ export class EcashRequestsService {
     private requestsRepo: Repository<EcashRequest>,
     @InjectRepository(CoordinatorProvider)
     private coordinatorProvidersRepo: Repository<CoordinatorProvider>,
+    @InjectRepository(AgentProvider)
+    private agentProvidersRepo: Repository<AgentProvider>,
     private dataSource: DataSource,
   ) {}
 
   // Step 1: an agent whose wallet is running low asks for a top-up.
-  create(
+  async create(
     agentId: string,
     providerId: string,
     amount: number,
     type: RequestType,
   ) {
+    const approved = await this.agentProvidersRepo.findOne({
+      where: { agentId, providerId, status: ApplicationStatus.APPROVED },
+    });
+    if (!approved) {
+      throw new ForbiddenException('You are not approved to work with this provider');
+    }
+
     const request = this.requestsRepo.create({
       agentId,
       providerId,
@@ -89,6 +101,27 @@ export class EcashRequestsService {
     return this.requestsRepo.save(request);
   }
 
+  // A provider can see the full request history for its own network.
+  providerRequests(providerId: string) {
+    return this.requestsRepo.find({
+      where: { providerId },
+      relations: ['agent', 'coordinator'],
+      order: { requestedAt: 'DESC' },
+    });
+  }
+
+  // The agent can stop an open request before any coordinator takes it.
+  async cancel(id: string, agentId: string) {
+    const request = await this.requestsRepo.findOne({ where: { id, agentId } });
+    if (!request) throw new NotFoundException('Request not found');
+    if (request.status !== RequestStatus.PENDING) {
+      throw new BadRequestException('Only an open request can be cancelled');
+    }
+
+    request.status = RequestStatus.CANCELLED;
+    return this.requestsRepo.save(request);
+  }
+
   // Small helper: which providers is this coordinator approved for?
   private async approvedProviderIdsFor(coordinatorId: string) {
     const approved = await this.coordinatorProvidersRepo.find({
@@ -113,41 +146,95 @@ export class EcashRequestsService {
         throw new BadRequestException('This request must be accepted first');
       }
 
-      if (request.type === RequestType.E_CASH) {
-        let wallet = await safe.findOne(Wallet, {
-          where: { agentId: request.agentId, providerId: request.providerId },
+      let agentWallet = await safe.findOne(Wallet, {
+        where: { agentId: request.agentId, providerId: request.providerId },
+      });
+      if (!agentWallet) {
+        agentWallet = safe.create(Wallet, {
+          agentId: request.agentId,
+          providerId: request.providerId,
+          balance: 0,
         });
-        if (!wallet) {
-          wallet = safe.create(Wallet, {
-            agentId: request.agentId,
-            providerId: request.providerId,
-            balance: 0,
-          });
-        }
-
-        wallet.balance = Number(wallet.balance) + Number(request.amount);
-        await safe.save(wallet);
-      } else {
-        let drawer = await safe.findOne(CashDrawer, {
-          where: { agentId: request.agentId },
-        });
-        if (!drawer) {
-          drawer = safe.create(CashDrawer, {
-            agentId: request.agentId,
-            balance: 0,
-          });
-        }
-
-        drawer.balance = Number(drawer.balance) + Number(request.amount);
-        await safe.save(drawer);
       }
+
+      let coordinatorWallet = await safe.findOne(Wallet, {
+        where: { coordinatorId, providerId: request.providerId },
+      });
+      if (!coordinatorWallet) {
+        coordinatorWallet = safe.create(Wallet, {
+          coordinatorId,
+          providerId: request.providerId,
+          balance: 0,
+        });
+      }
+
+      let agentDrawer = await safe.findOne(CashDrawer, {
+        where: { agentId: request.agentId },
+      });
+      if (!agentDrawer) {
+        agentDrawer = safe.create(CashDrawer, {
+          agentId: request.agentId,
+          balance: 0,
+        });
+      }
+
+      let coordinatorDrawer = await safe.findOne(CashDrawer, {
+        where: { coordinatorId },
+      });
+      if (!coordinatorDrawer) {
+        coordinatorDrawer = safe.create(CashDrawer, {
+          coordinatorId,
+          balance: 0,
+        });
+      }
+
+      const amount = Number(request.amount);
+      if (request.type === RequestType.E_CASH) {
+        if (Number(coordinatorWallet.balance) < amount) {
+          throw new BadRequestException('Coordinator does not have enough e-cash');
+        }
+        if (Number(agentDrawer.balance) < amount) {
+          throw new BadRequestException('Agent does not have enough physical cash');
+        }
+
+        coordinatorWallet.balance = Number(coordinatorWallet.balance) - amount;
+        agentWallet.balance = Number(agentWallet.balance) + amount;
+        agentDrawer.balance = Number(agentDrawer.balance) - amount;
+        coordinatorDrawer.balance = Number(coordinatorDrawer.balance) + amount;
+      } else {
+        if (Number(coordinatorDrawer.balance) < amount) {
+          throw new BadRequestException('Coordinator does not have enough physical cash');
+        }
+        if (Number(agentWallet.balance) < amount) {
+          throw new BadRequestException('Agent does not have enough e-cash');
+        }
+
+        coordinatorDrawer.balance = Number(coordinatorDrawer.balance) - amount;
+        agentDrawer.balance = Number(agentDrawer.balance) + amount;
+        agentWallet.balance = Number(agentWallet.balance) - amount;
+        coordinatorWallet.balance = Number(coordinatorWallet.balance) + amount;
+      }
+
+      await safe.save([agentWallet, coordinatorWallet, agentDrawer, coordinatorDrawer]);
+
+      const transaction = safe.create(CashTransaction, {
+        agentId: request.agentId,
+        coordinatorId,
+        providerId: request.providerId,
+        requestId: request.id,
+        type: TransactionType.LIQUIDITY_SWAP,
+        amount,
+        drawerBalanceAfter: agentDrawer.balance,
+        walletBalanceAfter: agentWallet.balance,
+      });
+      await safe.save(transaction);
 
       // mark the request as done
       request.status = RequestStatus.FULFILLED;
       request.fulfilledAt = new Date();
       await safe.save(request);
 
-      return { request };
+      return { request, transaction };
     });
   }
 }
