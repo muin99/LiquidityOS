@@ -5,6 +5,7 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { loginSchema } from "@/lib/validation";
+import AuthIntro from "@/components/auth-intro";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -60,51 +61,55 @@ export default function LoginPage() {
 
   return (
     <main className="flex-1 flex items-center justify-center bg-base-200 px-4 py-16">
-      <div className="card w-full max-w-sm bg-base-100 shadow-xl">
-        <div className="card-body">
-          <h1 className="card-title">Log in</h1>
-          <p className="text-sm text-base-content/60">
-            Use the email or phone you registered with.
-          </p>
+      <div className="card w-full max-w-4xl shadow-xl overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-2 bg-base-100">
+          <AuthIntro />
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3 mt-2">
-            <fieldset className="fieldset">
-              <label className="label">Email or phone</label>
-              <input
-                type="text"
-                name="login"
-                value={formData.login}
-                onChange={handleChange}
-                placeholder="you@example.com"
-                className="input w-full"
-              />
-            </fieldset>
+          <div className="py-16 px-8">
+            <h2 className="text-2xl font-semibold mb-2 text-center">Log in</h2>
+            <p className="text-sm text-base-content/60 text-center mb-4">
+              Use the email or phone you registered with.
+            </p>
 
-            <fieldset className="fieldset">
-              <label className="label">Password</label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="********"
-                className="input w-full"
-              />
-            </fieldset>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+              <fieldset className="fieldset">
+                <label className="label">Email or phone</label>
+                <input
+                  type="text"
+                  name="login"
+                  value={formData.login}
+                  onChange={handleChange}
+                  placeholder="you@example.com"
+                  className="input w-full"
+                />
+              </fieldset>
 
-            {error && <p className="text-error text-sm">{error}</p>}
+              <fieldset className="fieldset">
+                <label className="label">Password</label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="********"
+                  className="input w-full"
+                />
+              </fieldset>
 
-            <button type="submit" className="btn btn-primary mt-2">
-              Log in
-            </button>
-          </form>
+              {error && <p className="text-error text-sm">{error}</p>}
 
-          <p className="text-sm text-center mt-4">
-            No account yet?{" "}
-            <Link href="/register" className="link link-primary">
-              Register
-            </Link>
-          </p>
+              <button type="submit" className="btn btn-primary mt-2">
+                Log in
+              </button>
+            </form>
+
+            <p className="text-sm text-center mt-4">
+              No account yet?{" "}
+              <Link href="/register" className="link link-primary">
+                Register
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </main>

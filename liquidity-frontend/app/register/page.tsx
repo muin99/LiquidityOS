@@ -5,6 +5,7 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { registerSchema } from "@/lib/validation";
+import AuthIntro from "@/components/auth-intro";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -129,15 +130,20 @@ export default function RegisterPage() {
 
   return (
     <main className="flex-1 flex items-center justify-center bg-base-200 px-4 py-16">
-      <div className="card w-full max-w-sm bg-base-100 shadow-xl">
-        <div className="card-body">
-          <h1 className="card-title">Create an account</h1>
-          <p className="text-sm text-base-content/60">
-            Sign up as an agent, a coordinator, or a provider. An admin has to
-            approve your account before you can log in.
-          </p>
+      <div className="card w-full max-w-4xl shadow-xl overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-2 bg-base-100">
+          <AuthIntro />
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3 mt-2">
+          <div className="py-16 px-8">
+            <h2 className="text-2xl font-semibold mb-2 text-center">
+              Create an account
+            </h2>
+            <p className="text-sm text-base-content/60 text-center mb-4">
+              Sign up as an agent, a coordinator, or a provider. An admin has
+              to approve your account before you can log in.
+            </p>
+
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <fieldset className="fieldset">
               <label className="label">Full name</label>
               <input
@@ -249,12 +255,13 @@ export default function RegisterPage() {
             </button>
           </form>
 
-          <p className="text-sm text-center mt-4">
-            Already have an account?{" "}
-            <Link href="/login" className="link link-primary">
-              Log in
-            </Link>
-          </p>
+            <p className="text-sm text-center mt-4">
+              Already have an account?{" "}
+              <Link href="/login" className="link link-primary">
+                Log in
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </main>

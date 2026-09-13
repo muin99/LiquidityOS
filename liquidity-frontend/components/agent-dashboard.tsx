@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
+import BanknotesIcon from "@heroicons/react/24/outline/BanknotesIcon";
+import WalletIcon from "@heroicons/react/24/outline/WalletIcon";
+import TitleCard from "@/components/title-card";
 
 export default function AgentDashboard() {
   const [loading, setLoading] = useState(true);
@@ -147,14 +150,16 @@ export default function AgentDashboard() {
     <div className="flex flex-col gap-8">
       <div className="stats shadow w-full">
         <div className="stat">
+          <div className="stat-figure text-primary">
+            <BanknotesIcon className="h-8 w-8" />
+          </div>
           <div className="stat-title">Cash drawer</div>
           <div className="stat-value">৳{drawerBalance}</div>
           <div className="stat-desc">Physical cash on hand</div>
         </div>
       </div>
 
-      <div>
-        <h2 className="text-lg font-semibold mb-3">E-cash wallets</h2>
+      <TitleCard title="E-cash wallets">
         {wallets.length === 0 ? (
           <p className="text-base-content/60">
             No e-cash yet — ask a coordinator to send some using the form below.
@@ -162,20 +167,22 @@ export default function AgentDashboard() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {wallets.map((wallet) => (
-              <div key={wallet.id} className="card bg-base-100 shadow">
-                <div className="card-body">
-                  <h3 className="card-title text-base">{wallet.provider.name}</h3>
-                  <p className="text-2xl font-bold">৳{wallet.balance}</p>
+              <div key={wallet.id} className="stats shadow">
+                <div className="stat">
+                  <div className="stat-figure text-primary">
+                    <WalletIcon className="h-8 w-8" />
+                  </div>
+                  <div className="stat-title">{wallet.provider.name}</div>
+                  <div className="stat-value">৳{wallet.balance}</div>
                 </div>
               </div>
             ))}
           </div>
         )}
-      </div>
+      </TitleCard>
 
-      <div className="card bg-base-100 shadow">
-        <div className="card-body">
-          <h2 className="card-title text-lg">Cash in / Cash out</h2>
+      <TitleCard title="Cash in / Cash out">
+        <div>
           <p className="text-sm text-base-content/60">
             Cash-in moves money from e-cash into your drawer. Cash-out
             moves it back the other way.
@@ -231,11 +238,10 @@ export default function AgentDashboard() {
 
           {moveError && <p className="text-error text-sm mt-1">{moveError}</p>}
         </div>
-      </div>
+      </TitleCard>
 
-      <div className="card bg-base-100 shadow">
-        <div className="card-body">
-          <h2 className="card-title text-lg">Request e-cash</h2>
+      <TitleCard title="Request e-cash">
+        <div>
           <p className="text-sm text-base-content/60">
             Running low on a wallet? Ask a coordinator to top it up.
           </p>
@@ -277,10 +283,9 @@ export default function AgentDashboard() {
 
           {error && <p className="text-error text-sm mt-1">{error}</p>}
         </div>
-      </div>
+      </TitleCard>
 
-      <div>
-        <h2 className="text-lg font-semibold mb-3">My e-cash requests</h2>
+      <TitleCard title="My e-cash requests">
         <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100">
           <table className="table">
             <thead>
@@ -303,7 +308,7 @@ export default function AgentDashboard() {
             </tbody>
           </table>
         </div>
-      </div>
+      </TitleCard>
     </div>
   );
 }
