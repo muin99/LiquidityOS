@@ -11,6 +11,7 @@ import TitleCard from "@/components/title-card";
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [pendingUsers, setPendingUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [pendingApplications, setPendingApplications] = useState<any[]>([]);
   const [areas, setAreas] = useState<any[]>([]);
   const [providers, setProviders] = useState<any[]>([]);
@@ -24,6 +25,11 @@ export default function AdminDashboard() {
   async function loadPendingUsers() {
     const response = await axios.get("/api/users/pending", authHeader);
     setPendingUsers(response.data);
+  }
+
+  async function loadUsers() {
+    const response = await axios.get("/api/users", authHeader);
+    setUsers(response.data);
   }
 
   async function loadPendingApplications() {
@@ -44,6 +50,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     async function loadEverything() {
       await loadPendingUsers();
+      await loadUsers();
       await loadPendingApplications();
       await loadAreas();
       await loadProviders();
@@ -58,9 +65,36 @@ export default function AdminDashboard() {
     try {
       await axios.patch(`/api/users/${id}/approve`, {}, authHeader);
       await loadPendingUsers();
+      await loadUsers();
       setActionError("");
     } catch (err) {
       setActionError("Something went wrong, please try again");
+    }
+  }
+
+  async function deleteUser(id: string, name: string) {
+    if (!window.confirm(`Delete ${name}? This cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await axios.delete(`/api/users/${id}`, authHeader);
+      await loadPendingUsers();
+      await loadUsers();
+      setActionError("");
+    } catch (err) {
+      setActionError("Could not delete this user");
+    }
+  }
+
+  async function restrictUser(id: string) {
+    try {
+      await axios.patch(`/api/users/${id}/restrict`, {}, authHeader);
+      await loadPendingUsers();
+      await loadUsers();
+      setActionError("");
+    } catch (err) {
+      setActionError("Could not restrict this user");
     }
   }
 
@@ -208,6 +242,68 @@ export default function AdminDashboard() {
             ))}
           </div>
         )}
+      </TitleCard>
+
+      <TitleCard title="All people">
+        <p className="text-sm text-base-content/60 -mt-2 mb-3">
+          Agents, coordinators, providers, and admins in one place.
+        </p>
+        <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100">
+          <table className="table table-zebra">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Area / provider</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((user) => (
+                <tr key={user.id}>
+                  <td>
+                    <div className="font-medium">{user.fullName}</div>
+                    <div className="text-xs text-base-content/60">
+                      {user.email || user.phone}
+                    </div>
+                  </td>
+                  <td className="capitalize">{user.role}</td>
+                  <td>{user.provider?.name || user.area?.name || "-"}</td>
+                  <td>
+                    <span className="badge badge-outline capitalize">
+                      {user.status}
+                    </span>
+                  </td>
+                  <td>
+                    {user.status === "pending" && (
+                      <button
+                        onClick={() => approveUser(user.id)}
+                        className="btn btn-success btn-sm"
+                      >
+                        Approve
+                      </button>
+                    )}
+                    {user.status === "active" && (
+                      <button
+                        onClick={() => restrictUser(user.id)}
+                        className="btn btn-warning btn-sm ml-2"
+                      >
+                        Restrict
+                      </button>
+                    )}
+                    <button
+                      onClick={() => deleteUser(user.id, user.fullName)}
+                      className="btn btn-ghost btn-error btn-sm ml-2"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </TitleCard>
 
       <TitleCard title="Pending coordinator join requests">
