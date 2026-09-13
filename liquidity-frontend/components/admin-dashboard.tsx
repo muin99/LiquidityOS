@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import api from "@/lib/api";
+import axios from "axios";
 
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
@@ -11,26 +11,31 @@ export default function AdminDashboard() {
   const [providers, setProviders] = useState<any[]>([]);
   const [actionError, setActionError] = useState("");
 
+  // Every request that needs to prove who we are just sends this
+  // header by hand, no auto-attaching magic behind the scenes.
+  const token = localStorage.getItem("access_token");
+  const authHeader = { headers: { Authorization: `Bearer ${token}` } };
+
   function loadPendingUsers() {
-    return api.get("/users/pending").then((response) => {
+    return axios.get("/api/users/pending", authHeader).then((response) => {
       setPendingUsers(response.data);
     });
   }
 
   function loadPendingApplications() {
-    return api.get("/coordinator-providers/pending").then((response) => {
+    return axios.get("/api/coordinator-providers/pending", authHeader).then((response) => {
       setPendingApplications(response.data);
     });
   }
 
   function loadAreas() {
-    return api.get("/areas").then((response) => {
+    return axios.get("/api/areas").then((response) => {
       setAreas(response.data);
     });
   }
 
   function loadProviders() {
-    return api.get("/providers").then((response) => {
+    return axios.get("/api/providers").then((response) => {
       setProviders(response.data);
     });
   }
@@ -47,24 +52,22 @@ export default function AdminDashboard() {
   }, []);
 
   async function approveUser(id: string) {
-    setActionError("");
     try {
-      await api.patch(`/users/${id}/approve`);
+      await axios.patch(`/api/users/${id}/approve`, {}, authHeader);
       await loadPendingUsers();
+      setActionError("");
     } catch (err: any) {
-      const backendMessage = err.response && err.response.data && err.response.data.message;
-      setActionError(backendMessage || "Something went wrong, please try again");
+      setActionError(err.response?.data?.message || "Something went wrong, please try again");
     }
   }
 
   async function decideApplication(id: string, status: "approved" | "rejected") {
-    setActionError("");
     try {
-      await api.patch(`/coordinator-providers/${id}/decide`, { status });
+      await axios.patch(`/api/coordinator-providers/${id}/decide`, { status }, authHeader);
       await loadPendingApplications();
+      setActionError("");
     } catch (err: any) {
-      const backendMessage = err.response && err.response.data && err.response.data.message;
-      setActionError(backendMessage || "Something went wrong, please try again");
+      setActionError(err.response?.data?.message || "Something went wrong, please try again");
     }
   }
 
@@ -81,15 +84,14 @@ export default function AdminDashboard() {
       return;
     }
 
-    setAreaError("");
     try {
-      await api.post("/areas", { name: areaName, region: areaRegion });
+      await axios.post("/api/areas", { name: areaName, region: areaRegion }, authHeader);
       await loadAreas();
+      setAreaError("");
       setAreaName("");
       setAreaRegion("");
     } catch (err: any) {
-      const backendMessage = err.response && err.response.data && err.response.data.message;
-      setAreaError(backendMessage || "Something went wrong, please try again");
+      setAreaError(err.response?.data?.message || "Something went wrong, please try again");
     }
   }
 
@@ -105,14 +107,13 @@ export default function AdminDashboard() {
       return;
     }
 
-    setProviderError("");
     try {
-      await api.post("/providers", { name: providerName });
+      await axios.post("/api/providers", { name: providerName }, authHeader);
       await loadProviders();
+      setProviderError("");
       setProviderName("");
     } catch (err: any) {
-      const backendMessage = err.response && err.response.data && err.response.data.message;
-      setProviderError(backendMessage || "Something went wrong, please try again");
+      setProviderError(err.response?.data?.message || "Something went wrong, please try again");
     }
   }
 

@@ -3,22 +3,25 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getUser, logout } from "@/lib/auth";
 
 export default function Navbar() {
   const router = useRouter();
 
   // We dont know if anyone is logged in until the page actually
-  // loads in the browser (localStorage doesnt exist on the server),
-  // so this starts as null and gets filled in by the effect below.
+  // loads in the browser, so this starts as null and gets filled
+  // in by the effect below.
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    setUser(getUser());
+    const userJson = localStorage.getItem("user");
+    if (userJson) {
+      setUser(JSON.parse(userJson));
+    }
   }, []);
 
   function handleLogout() {
-    logout();
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("user");
     setUser(null);
     router.push("/");
   }

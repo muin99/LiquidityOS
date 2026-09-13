@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import api from "@/lib/api";
+import axios from "axios";
 
 export default function AgentDashboard() {
   const [loading, setLoading] = useState(true);
@@ -12,18 +12,23 @@ export default function AgentDashboard() {
   const [requests, setRequests] = useState<any[]>([]);
   const [providers, setProviders] = useState<any[]>([]);
 
+  // Every request that needs to prove who we are just sends this
+  // header by hand, no auto-attaching magic behind the scenes.
+  const token = localStorage.getItem("access_token");
+  const authHeader = { headers: { Authorization: `Bearer ${token}` } };
+
   // Go ask the backend "what does my stuff look like right now" and
   // put the answer into state. We call this again after every
   // cash-in / cash-out / request, so the numbers on screen stay fresh.
   function loadWallets() {
-    return api.get("/wallets/me").then((response) => {
+    return axios.get("/api/wallets/me", authHeader).then((response) => {
       setDrawerBalance(Number(response.data.cashDrawer.balance));
       setWallets(response.data.ecashWallets);
     });
   }
 
   function loadRequests() {
-    return api.get("/ecash-requests/mine").then((response) => {
+    return axios.get("/api/ecash-requests/mine", authHeader).then((response) => {
       setRequests(response.data);
     });
   }
@@ -32,7 +37,7 @@ export default function AgentDashboard() {
     Promise.all([
       loadWallets(),
       loadRequests(),
-      api.get("/providers").then((response) => setProviders(response.data)),
+      axios.get("/api/providers").then((response) => setProviders(response.data)),
     ]).then(() => {
       setLoading(false);
     });
@@ -45,7 +50,6 @@ export default function AgentDashboard() {
     amount: "",
   });
   const [moveError, setMoveError] = useState("");
-  const [moveSubmitting, setMoveSubmitting] = useState(false);
 
   function handleMoveChange(e: any) {
     const { name, value } = e.target;
@@ -69,25 +73,21 @@ export default function AgentDashboard() {
       return;
     }
 
-    setMoveError("");
-    setMoveSubmitting(true);
-
     try {
       // moveData.type is either "cash-in" or "cash-out", which
       // happen to also be the names of the two backend routes.
-      await api.post(`/wallets/${moveData.type}`, {
-        providerId: moveData.providerId,
-        amount,
-      });
+      await axios.post(
+        `/api/wallets/${moveData.type}`,
+        { providerId: moveData.providerId, amount },
+        authHeader,
+      );
 
       await loadWallets();
+      setMoveError("");
       setMoveData({ ...moveData, amount: "" });
     } catch (err: any) {
-      const backendMessage = err.response && err.response.data && err.response.data.message;
-      setMoveError(backendMessage || "Something went wrong, please try again");
+      setMoveError(err.response?.data?.message || "Something went wrong, please try again");
     }
-
-    setMoveSubmitting(false);
   }
 
   // --- e-cash request form ---
@@ -96,7 +96,6 @@ export default function AgentDashboard() {
     amount: "",
   });
   const [error, setError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
 
   function handleChange(e: any) {
     const { name, value } = e.target;
@@ -119,23 +118,19 @@ export default function AgentDashboard() {
       return;
     }
 
-    setError("");
-    setSubmitting(true);
-
     try {
-      await api.post("/ecash-requests", {
-        providerId: formData.providerId,
-        amount: Number(formData.amount),
-      });
+      await axios.post(
+        "/api/ecash-requests",
+        { providerId: formData.providerId, amount: Number(formData.amount) },
+        authHeader,
+      );
 
       await loadRequests();
+      setError("");
       setFormData({ providerId: "", amount: "" });
     } catch (err: any) {
-      const backendMessage = err.response && err.response.data && err.response.data.message;
-      setError(backendMessage || "Something went wrong, please try again");
+      setError(err.response?.data?.message || "Something went wrong, please try again");
     }
-
-    setSubmitting(false);
   }
 
   if (loading) {
@@ -227,7 +222,7 @@ export default function AgentDashboard() {
               />
             </fieldset>
 
-            <button type="submit" disabled={moveSubmitting} className="btn btn-primary sm:mt-6">
+            <button type="submit" className="btn btn-primary sm:mt-6">
               Confirm
             </button>
           </form>
@@ -273,7 +268,7 @@ export default function AgentDashboard() {
               />
             </fieldset>
 
-            <button type="submit" disabled={submitting} className="btn btn-primary sm:mt-6">
+            <button type="submit" className="btn btn-primary sm:mt-6">
               Send request
             </button>
           </form>

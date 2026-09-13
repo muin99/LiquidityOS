@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import axios from "axios";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import api from "@/lib/api";
-import { saveLogin } from "@/lib/auth";
 import { loginSchema } from "@/lib/validation";
 
 export default function LoginPage() {
@@ -17,7 +16,6 @@ export default function LoginPage() {
   });
 
   const [error, setError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
 
   function handleChange(e: any) {
     const { name, value } = e.target;
@@ -40,28 +38,25 @@ export default function LoginPage() {
       return;
     }
 
-    setError("");
-    setSubmitting(true);
-
     try {
       // Ask the real backend to check the email/phone + password.
-      const response = await api.post("/auth/login", {
+      // "/api/..." gets forwarded to the backend by next.config.ts.
+      const response = await axios.post("/api/auth/login", {
         login: formData.login,
         password: formData.password,
       });
 
-      const accessToken = response.data.accessToken;
-      const user = response.data.user;
+      // Just save the token and the user straight into localStorage,
+      // plain and simple, no helper functions needed.
+      localStorage.setItem("access_token", response.data.accessToken);
+      localStorage.setItem("user", JSON.stringify(response.data.user));
 
-      // Remember who is logged in, then go straight to their dashboard.
-      saveLogin(accessToken, user);
-      router.push(`/dashboard/${user.role}`);
+      setError("");
+      router.push(`/dashboard/${response.data.user.role}`);
     } catch (err: any) {
       // The backend sends back a nice message when something is wrong,
       // like "Wrong email/phone or password".
-      const backendMessage = err.response && err.response.data && err.response.data.message;
-      setError(backendMessage || "Something went wrong, please try again");
-      setSubmitting(false);
+      setError(err.response?.data?.message || "Something went wrong, please try again");
     }
   }
 
@@ -101,8 +96,8 @@ export default function LoginPage() {
 
             {error && <p className="text-error text-sm">{error}</p>}
 
-            <button type="submit" disabled={submitting} className="btn btn-primary mt-2">
-              {submitting ? "Logging in..." : "Log in"}
+            <button type="submit" className="btn btn-primary mt-2">
+              Log in
             </button>
           </form>
 

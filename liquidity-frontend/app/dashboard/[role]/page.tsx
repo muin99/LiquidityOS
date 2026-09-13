@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getUser } from "@/lib/auth";
 import AgentDashboard from "@/components/agent-dashboard";
 import CoordinatorDashboard from "@/components/coordinator-dashboard";
 import ProviderDashboard from "@/components/provider-dashboard";
@@ -19,30 +18,28 @@ export default function DashboardPage() {
   const params = useParams<{ role: string }>();
   const role = params.role;
 
-  // We start "checking" until we've had a chance to look at
-  // localStorage in the browser. Only after that do we know if this
-  // person is actually allowed to see this page.
-  const [checking, setChecking] = useState(true);
-  const [allowed, setAllowed] = useState(false);
+  // Only show the dashboard once we've checked whos logged in.
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const user = getUser();
+    const token = localStorage.getItem("access_token");
+    const userJson = localStorage.getItem("user");
 
     // Not logged in at all -> go log in first.
-    if (!user) {
-      router.replace("/login");
+    if (!token || !userJson) {
+      router.push("/login");
       return;
     }
 
     // Logged in, but trying to look at someone else's dashboard
     // (e.g. an agent typing /dashboard/admin in the address bar).
+    const user = JSON.parse(userJson);
     if (user.role !== role) {
-      router.replace(`/dashboard/${user.role}`);
+      router.push(`/dashboard/${user.role}`);
       return;
     }
 
-    setAllowed(true);
-    setChecking(false);
+    setReady(true);
   }, [role, router]);
 
   if (!VALID_ROLES.includes(role)) {
@@ -53,7 +50,7 @@ export default function DashboardPage() {
     );
   }
 
-  if (checking || !allowed) {
+  if (!ready) {
     return (
       <main className="flex-1 flex items-center justify-center bg-base-200">
         <span className="loading loading-spinner loading-lg" />

@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import api from "@/lib/api";
-import { getUser } from "@/lib/auth";
+import axios from "axios";
 
 export default function ProviderDashboard() {
   const [loading, setLoading] = useState(true);
@@ -10,8 +9,13 @@ export default function ProviderDashboard() {
   const [providerName, setProviderName] = useState("");
   const [actionError, setActionError] = useState("");
 
+  // Every request that needs to prove who we are just sends this
+  // header by hand, no auto-attaching magic behind the scenes.
+  const token = localStorage.getItem("access_token");
+  const authHeader = { headers: { Authorization: `Bearer ${token}` } };
+
   function loadApplications() {
-    return api.get("/coordinator-providers/pending").then((response) => {
+    return axios.get("/api/coordinator-providers/pending", authHeader).then((response) => {
       setApplications(response.data);
     });
   }
@@ -19,11 +23,11 @@ export default function ProviderDashboard() {
   useEffect(() => {
     // The logged in user (saved at login time) already knows which
     // provider this account represents.
-    const user = getUser();
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
 
     Promise.all([
       loadApplications(),
-      api.get("/providers").then((response) => {
+      axios.get("/api/providers").then((response) => {
         const mine = response.data.find((p: any) => p.id === user.providerId);
         if (mine) {
           setProviderName(mine.name);
@@ -35,14 +39,12 @@ export default function ProviderDashboard() {
   }, []);
 
   async function handleDecide(id: string, status: "approved" | "rejected") {
-    setActionError("");
-
     try {
-      await api.patch(`/coordinator-providers/${id}/decide`, { status });
+      await axios.patch(`/api/coordinator-providers/${id}/decide`, { status }, authHeader);
       await loadApplications();
+      setActionError("");
     } catch (err: any) {
-      const backendMessage = err.response && err.response.data && err.response.data.message;
-      setActionError(backendMessage || "Something went wrong, please try again");
+      setActionError(err.response?.data?.message || "Something went wrong, please try again");
     }
   }
 
