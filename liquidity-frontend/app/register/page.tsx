@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import api from "@/lib/api";
 import { registerSchema } from "@/lib/validation";
-import { mockAreas } from "@/lib/mock-data";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -17,10 +17,30 @@ export default function RegisterPage() {
     confirmPassword: "",
     role: "agent",
     areaId: "",
+    providerId: "",
   });
 
+  // These start empty and get filled in from the real backend once
+  // the page loads. Then we use them to build the dropdowns below.
+  const [areas, setAreas] = useState<any[]>([]);
+  const [providers, setProviders] = useState<any[]>([]);
+
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+
+  // As soon as the page opens, go ask the backend for the list of
+  // areas and providers, so the dropdowns below have real options.
+  useEffect(() => {
+    api.get("/areas").then((response) => {
+      setAreas(response.data);
+    });
+
+    api.get("/providers").then((response) => {
+      setProviders(response.data);
+    });
+  }, []);
 
   // After a successful registration, wait a bit and then send the
   // user to the login page — like a little "redirecting..." moment.
@@ -44,7 +64,7 @@ export default function RegisterPage() {
     });
   }
 
-  function handleSubmit(e: any) {
+  async function handleSubmit(e: any) {
     e.preventDefault();
 
     // Check the passwords match ourselves before even asking zod.
@@ -62,16 +82,44 @@ export default function RegisterPage() {
       return;
     }
 
-    // No backend yet — just show a success message and redirect.
+    // A provider account has to say WHICH provider they represent.
+    // Everyone else has to say which area they work in.
+    if (formData.role === "provider" && !formData.providerId) {
+      setError("Please pick which provider you are");
+      return;
+    }
+    if (formData.role !== "provider" && !formData.areaId) {
+      setError("Please pick your area");
+      return;
+    }
+
     setError("");
-    setSubmitted(true);
+    setSubmitting(true);
+
+    try {
+      const response = await api.post("/auth/register", {
+        fullName: formData.fullName,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role,
+        areaId: formData.role === "provider" ? undefined : formData.areaId,
+        providerId: formData.role === "provider" ? formData.providerId : undefined,
+      });
+
+      setSuccessMessage(response.data.message);
+      setSubmitted(true);
+    } catch (err: any) {
+      const backendMessage = err.response && err.response.data && err.response.data.message;
+      setError(backendMessage || "Something went wrong, please try again");
+      setSubmitting(false);
+    }
   }
 
   if (submitted) {
     return (
       <main className="flex-1 flex items-center justify-center bg-base-200 px-4 py-16">
         <div className="alert alert-success max-w-sm">
-          <span>Registered! Redirecting you to the login page…</span>
+          <span>{successMessage} Redirecting you to the login page…</span>
         </div>
       </main>
     );
@@ -83,7 +131,8 @@ export default function RegisterPage() {
         <div className="card-body">
           <h1 className="card-title">Create an account</h1>
           <p className="text-sm text-base-content/60">
-            Sign up as an agent or a coordinator.
+            Sign up as an agent, a coordinator, or a provider. An admin has
+            to approve your account before you can log in.
           </p>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-3 mt-2">
@@ -145,30 +194,52 @@ export default function RegisterPage() {
               >
                 <option value="agent">Agent</option>
                 <option value="coordinator">Coordinator</option>
+                <option value="provider">Provider</option>
               </select>
             </fieldset>
 
-            <fieldset className="fieldset">
-              <label className="label">Area</label>
-              <select
-                name="areaId"
-                value={formData.areaId}
-                onChange={handleChange}
-                className="select w-full"
-              >
-                <option value="">Pick your area</option>
-                {mockAreas.map((area) => (
-                  <option key={area.id} value={area.id}>
-                    {area.name}
-                  </option>
-                ))}
-              </select>
-            </fieldset>
+            {formData.role !== "provider" && (
+              <fieldset className="fieldset">
+                <label className="label">Area</label>
+                <select
+                  name="areaId"
+                  value={formData.areaId}
+                  onChange={handleChange}
+                  className="select w-full"
+                >
+                  <option value="">Pick your area</option>
+                  {areas.map((area) => (
+                    <option key={area.id} value={area.id}>
+                      {area.name}
+                    </option>
+                  ))}
+                </select>
+              </fieldset>
+            )}
+
+            {formData.role === "provider" && (
+              <fieldset className="fieldset">
+                <label className="label">Which provider are you</label>
+                <select
+                  name="providerId"
+                  value={formData.providerId}
+                  onChange={handleChange}
+                  className="select w-full"
+                >
+                  <option value="">Pick a provider</option>
+                  {providers.map((provider) => (
+                    <option key={provider.id} value={provider.id}>
+                      {provider.name}
+                    </option>
+                  ))}
+                </select>
+              </fieldset>
+            )}
 
             {error && <p className="text-error text-sm">{error}</p>}
 
-            <button type="submit" className="btn btn-primary mt-2">
-              Register
+            <button type="submit" disabled={submitting} className="btn btn-primary mt-2">
+              {submitting ? "Registering..." : "Register"}
             </button>
           </form>
 
