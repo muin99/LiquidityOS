@@ -3,21 +3,21 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import api from "@/lib/api";
+import { saveLogin } from "@/lib/auth";
 import { loginSchema } from "@/lib/validation";
-import { mockProviders } from "@/lib/mock-data";
 
 export default function LoginPage() {
   const router = useRouter();
 
   // One object holds every field on the form, same as formData in class.
   const [formData, setFormData] = useState({
-    email: "",
+    login: "",
     password: "",
-    role: "agent",
-    provider: mockProviders[0], // only used when role is "provider"
   });
 
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   function handleChange(e: any) {
     const { name, value } = e.target;
@@ -28,7 +28,7 @@ export default function LoginPage() {
     });
   }
 
-  function handleSubmit(e: any) {
+  async function handleSubmit(e: any) {
     e.preventDefault();
 
     // Ask zod: "does this data follow the rules?"
@@ -41,15 +41,27 @@ export default function LoginPage() {
     }
 
     setError("");
+    setSubmitting(true);
 
-    // There is no backend here yet, so we just pretend the login worked
-    // and send the user to the dashboard for the role they picked.
-    // A provider also needs to say WHICH provider they are, so that
-    // gets tacked on as a query param.
-    if (formData.role === "provider") {
-      router.push(`/dashboard/provider?provider=${formData.provider}`);
-    } else {
-      router.push(`/dashboard/${formData.role}`);
+    try {
+      // Ask the real backend to check the email/phone + password.
+      const response = await api.post("/auth/login", {
+        login: formData.login,
+        password: formData.password,
+      });
+
+      const accessToken = response.data.accessToken;
+      const user = response.data.user;
+
+      // Remember who is logged in, then go straight to their dashboard.
+      saveLogin(accessToken, user);
+      router.push(`/dashboard/${user.role}`);
+    } catch (err: any) {
+      // The backend sends back a nice message when something is wrong,
+      // like "Wrong email/phone or password".
+      const backendMessage = err.response && err.response.data && err.response.data.message;
+      setError(backendMessage || "Something went wrong, please try again");
+      setSubmitting(false);
     }
   }
 
@@ -59,16 +71,16 @@ export default function LoginPage() {
         <div className="card-body">
           <h1 className="card-title">Log in</h1>
           <p className="text-sm text-base-content/60">
-            Demo mode — no real account needed, just pick a role.
+            Use the email or phone you registered with.
           </p>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-3 mt-2">
             <fieldset className="fieldset">
-              <label className="label">Email</label>
+              <label className="label">Email or phone</label>
               <input
                 type="text"
-                name="email"
-                value={formData.email}
+                name="login"
+                value={formData.login}
                 onChange={handleChange}
                 placeholder="you@example.com"
                 className="input w-full"
@@ -87,43 +99,10 @@ export default function LoginPage() {
               />
             </fieldset>
 
-            <fieldset className="fieldset">
-              <label className="label">Log in as</label>
-              <select
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className="select w-full"
-              >
-                <option value="agent">Agent</option>
-                <option value="coordinator">Coordinator</option>
-                <option value="provider">Provider</option>
-                <option value="admin">Admin</option>
-              </select>
-            </fieldset>
-
-            {formData.role === "provider" && (
-              <fieldset className="fieldset">
-                <label className="label">Which provider are you</label>
-                <select
-                  name="provider"
-                  value={formData.provider}
-                  onChange={handleChange}
-                  className="select w-full"
-                >
-                  {mockProviders.map((provider) => (
-                    <option key={provider} value={provider}>
-                      {provider}
-                    </option>
-                  ))}
-                </select>
-              </fieldset>
-            )}
-
             {error && <p className="text-error text-sm">{error}</p>}
 
-            <button type="submit" className="btn btn-primary mt-2">
-              Log in
+            <button type="submit" disabled={submitting} className="btn btn-primary mt-2">
+              {submitting ? "Logging in..." : "Log in"}
             </button>
           </form>
 
