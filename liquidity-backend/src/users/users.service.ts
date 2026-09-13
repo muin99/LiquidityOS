@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   ConflictException,
   NotFoundException,
@@ -72,10 +73,40 @@ export class UsersService {
     });
   }
 
+  // Admin's full people list: agents, coordinators, providers, and admins.
+  listAll() {
+    return this.usersRepo.find({
+      relations: ['area', 'provider'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   // Admin-only action: turn a pending account into an active one.
   async approve(id: string) {
     const user = await this.findById(id);
     user.status = UserStatus.ACTIVE;
     return this.usersRepo.save(user);
+  }
+
+  // Restricting an account sends it back to the same pending state as a new signup.
+  async restrict(id: string, adminId: string) {
+    if (id === adminId) {
+      throw new BadRequestException('You cannot restrict your own account');
+    }
+
+    const user = await this.findById(id);
+    user.status = UserStatus.PENDING;
+    return this.usersRepo.save(user);
+  }
+
+  // An admin can remove an account that is no longer part of the platform.
+  async remove(id: string, adminId: string) {
+    if (id === adminId) {
+      throw new BadRequestException('You cannot delete your own account');
+    }
+
+    const user = await this.findById(id);
+    await this.usersRepo.remove(user);
+    return { message: 'User deleted' };
   }
 }
