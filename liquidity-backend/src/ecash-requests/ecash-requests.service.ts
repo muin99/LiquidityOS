@@ -1,15 +1,24 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { EcashRequest } from './ecash-request.entity';
 import { Wallet } from '../wallets/wallet.entity';
+import { CoordinatorProvider } from '../coordinator-providers/coordinator-provider.entity';
 import { RequestStatus } from '../common/enums/request-status.enum';
+import { ApplicationStatus } from '../common/enums/application-status.enum';
 
 @Injectable()
 export class EcashRequestsService {
   constructor(
     @InjectRepository(EcashRequest)
     private requestsRepo: Repository<EcashRequest>,
+    @InjectRepository(CoordinatorProvider)
+    private coordinatorProvidersRepo: Repository<CoordinatorProvider>,
     private dataSource: DataSource,
   ) {}
 
@@ -24,8 +33,29 @@ export class EcashRequestsService {
     return this.requestsRepo.save(request);
   }
 
-  pendingRequests() {
-    return this.requestsRepo.find({ where: { status: RequestStatus.PENDING } });
+  // An agent checking on their own past requests.
+  myRequests(agentId: string) {
+    return this.requestsRepo.find({
+      where: { agentId },
+      relations: ['provider'],
+      order: { requestedAt: 'DESC' },
+    });
+  }
+
+  // A coordinator only gets to see requests for providers they have
+  // actually been approved for — not every single request on the
+  // whole platform.
+  async pendingRequests(coordinatorId: string) {
+    const approvedProviderIds = await this.approvedProviderIdsFor(coordinatorId);
+    if (approvedProviderIds.length === 0) {
+      return [];
+    }
+
+    return this.requestsRepo.find({
+      where: { status: RequestStatus.PENDING, providerId: In(approvedProviderIds) },
+      relations: ['agent', 'provider'],
+      order: { requestedAt: 'ASC' },
+    });
   }
 
   // Step 2: a coordinator says "I'll take care of this one".
@@ -36,9 +66,27 @@ export class EcashRequestsService {
       throw new BadRequestException('This request is not pending anymore');
     }
 
+    // You can only accept requests for a provider you've actually
+    // been approved to work with — otherwise anyone could grab any
+    // agent's request for any provider.
+    const approvedProviderIds = await this.approvedProviderIdsFor(coordinatorId);
+    if (!approvedProviderIds.includes(request.providerId)) {
+      throw new ForbiddenException(
+        'You are not an approved coordinator for this provider',
+      );
+    }
+
     request.coordinatorId = coordinatorId;
     request.status = RequestStatus.ACCEPTED;
     return this.requestsRepo.save(request);
+  }
+
+  // Small helper: which providers is this coordinator approved for?
+  private async approvedProviderIdsFor(coordinatorId: string) {
+    const approved = await this.coordinatorProvidersRepo.find({
+      where: { coordinatorId, status: ApplicationStatus.APPROVED },
+    });
+    return approved.map((row) => row.providerId);
   }
 
   // Step 3: the coordinator actually sends the e-cash. This changes real
