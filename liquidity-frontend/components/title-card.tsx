@@ -1,6 +1,6 @@
 // A plain card with a title and a line under it, then whatever you
-// put inside. Copied from the daisyUI admin template's "TitleCard"
-// idea, just simpler — no extra props, just a title and children.
+// put inside. Just plain Tailwind utility classes, no component
+// library — a white box, a shadow, rounded corners, some padding.
 
 export default function TitleCard({
   title,
@@ -10,12 +10,10 @@ export default function TitleCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="card w-full bg-base-100 shadow-xl">
-      <div className="card-body">
-        <h2 className="card-title text-lg">{title}</h2>
-        <div className="divider mt-1 mb-2"></div>
-        {children}
-      </div>
+    <div className="w-full rounded-lg bg-white p-6 shadow">
+      <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+      <hr className="my-3 border-gray-200" />
+      {children}
     </div>
   );
 }

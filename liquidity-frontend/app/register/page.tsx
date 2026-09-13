@@ -135,144 +135,158 @@ export default function RegisterPage() {
 
   if (submitted) {
     return (
-      <main className="flex-1 flex items-center justify-center bg-base-200 px-4 py-16">
-        <div className="alert alert-success max-w-sm">
-          <span>{successMessage} Redirecting you to the login page…</span>
+      <main className="flex flex-1 items-center justify-center bg-gray-100 px-4 py-16">
+        <div className="max-w-sm rounded-lg border border-green-200 bg-green-50 p-4 text-green-800">
+          {successMessage} Redirecting you to the login page…
         </div>
       </main>
     );
   }
 
   return (
-    <main className="flex-1 flex items-center justify-center bg-base-200 px-4 py-16">
-      <div className="card w-full max-w-4xl shadow-xl overflow-hidden">
-        <div className="grid grid-cols-1 md:grid-cols-2 bg-base-100">
+    <main className="flex flex-1 items-center justify-center bg-gray-100 px-4 py-16">
+      <div className="w-full max-w-4xl overflow-hidden rounded-lg shadow-xl">
+        <div className="grid grid-cols-1 bg-white md:grid-cols-2">
           <AuthIntro />
 
-          <div className="py-16 px-8">
-            <h2 className="text-2xl font-semibold mb-2 text-center">
+          <div className="px-8 py-16">
+            <h2 className="mb-2 text-center text-2xl font-semibold text-gray-900">
               Create an account
             </h2>
-            <p className="text-sm text-base-content/60 text-center mb-4">
+            <p className="mb-4 text-center text-sm text-gray-500">
               Sign up as an agent, a coordinator, or a provider. An admin has
               to approve your account before you can log in.
             </p>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-            <fieldset className="fieldset">
-              <label className="label">Full name</label>
-              <input
-                type="text"
-                name="fullName"
-                value={formData.fullName}
-                onChange={handleChange}
-                className="input w-full"
-                placeholder="Karim Ahmed"
-              />
-            </fieldset>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Full name
+                </label>
+                <input
+                  type="text"
+                  name="fullName"
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  placeholder="Karim Ahmed"
+                />
+              </div>
 
-            <fieldset className="fieldset">
-              <label className="label">Email</label>
-              <input
-                type="text"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="input w-full"
-                placeholder="you@example.com"
-              />
-            </fieldset>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Email
+                </label>
+                <input
+                  type="text"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  placeholder="you@example.com"
+                />
+              </div>
 
-            <fieldset className="fieldset">
-              <label className="label">Password</label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                className="input w-full"
-                placeholder="••••••••"
-              />
-            </fieldset>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  placeholder="••••••••"
+                />
+              </div>
 
-            <fieldset className="fieldset">
-              <label className="label">Confirm password</label>
-              <input
-                type="password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                className="input w-full"
-                placeholder="••••••••"
-              />
-            </fieldset>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Confirm password
+                </label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  placeholder="••••••••"
+                />
+              </div>
 
-            <fieldset className="fieldset">
-              <label className="label">I am a</label>
-              <select
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className="select w-full"
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  I am a
+                </label>
+                <select
+                  name="role"
+                  value={formData.role}
+                  onChange={handleChange}
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="agent">Agent</option>
+                  <option value="coordinator">Coordinator</option>
+                  <option value="provider">Provider</option>
+                </select>
+              </div>
+
+              {formData.role !== "provider" && (
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                    Area
+                  </label>
+                  <select
+                    name="areaId"
+                    value={formData.areaId}
+                    onChange={handleChange}
+                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="">Pick your area</option>
+                    {areas.map((area) => (
+                      <option key={area.id} value={area.id}>
+                        {area.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {formData.role === "provider" && (
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                    Which provider are you
+                  </label>
+                  <select
+                    name="providerId"
+                    value={formData.providerId}
+                    onChange={handleChange}
+                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="">Pick a provider</option>
+                    {providers.map((provider) => (
+                      <option key={provider.id} value={provider.id}>
+                        {provider.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {error && <p className="text-sm text-red-600">{error}</p>}
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="mt-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
               >
-                <option value="agent">Agent</option>
-                <option value="coordinator">Coordinator</option>
-                <option value="provider">Provider</option>
-              </select>
-            </fieldset>
+                {submitting ? "Registering..." : "Register"}
+              </button>
+            </form>
 
-            {formData.role !== "provider" && (
-              <fieldset className="fieldset">
-                <label className="label">Area</label>
-                <select
-                  name="areaId"
-                  value={formData.areaId}
-                  onChange={handleChange}
-                  className="select w-full"
-                >
-                  <option value="">Pick your area</option>
-                  {areas.map((area) => (
-                    <option key={area.id} value={area.id}>
-                      {area.name}
-                    </option>
-                  ))}
-                </select>
-              </fieldset>
-            )}
-
-            {formData.role === "provider" && (
-              <fieldset className="fieldset">
-                <label className="label">Which provider are you</label>
-                <select
-                  name="providerId"
-                  value={formData.providerId}
-                  onChange={handleChange}
-                  className="select w-full"
-                >
-                  <option value="">Pick a provider</option>
-                  {providers.map((provider) => (
-                    <option key={provider.id} value={provider.id}>
-                      {provider.name}
-                    </option>
-                  ))}
-                </select>
-              </fieldset>
-            )}
-
-            {error && <p className="text-error text-sm">{error}</p>}
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="btn btn-primary mt-2"
-            >
-              {submitting ? "Registering..." : "Register"}
-            </button>
-          </form>
-
-            <p className="text-sm text-center mt-4">
+            <p className="mt-4 text-center text-sm text-gray-600">
               Already have an account?{" "}
-              <Link href="/login" className="link link-primary">
+              <Link href="/login" className="text-blue-600 hover:underline">
                 Log in
               </Link>
             </p>

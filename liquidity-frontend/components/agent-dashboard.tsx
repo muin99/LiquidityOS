@@ -202,7 +202,7 @@ export default function AgentDashboard() {
   if (loading) {
     return (
       <div className="flex justify-center py-24">
-        <span className="loading loading-spinner loading-lg" />
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600" />
       </div>
     );
   }
@@ -221,61 +221,62 @@ export default function AgentDashboard() {
     if (req.status === "fulfilled") fulfilledCount++;
   }
 
-  // Just picks a daisyUI badge color to match the status word, so
-  // its easier to scan a long list at a glance.
+  // Just picks a plain Tailwind badge color to match the status word,
+  // so its easier to scan a long list at a glance.
   function statusBadgeClass(status: string) {
-    if (status === "pending") return "badge-warning";
-    if (status === "accepted") return "badge-info";
-    if (status === "fulfilled") return "badge-success";
-    if (status === "rejected") return "badge-error";
-    return "badge-outline";
+    if (status === "pending") return "bg-amber-100 text-amber-800";
+    if (status === "accepted") return "bg-sky-100 text-sky-800";
+    if (status === "fulfilled") return "bg-green-100 text-green-800";
+    if (status === "rejected") return "bg-red-100 text-red-800";
+    return "bg-gray-100 text-gray-600";
   }
+
+  const inputClass =
+    "w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="stats shadow w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="stat">
-          <div className="stat-figure text-primary">
-            <BanknotesIcon className="h-8 w-8" />
+      <div className="grid grid-cols-1 gap-px overflow-hidden rounded-lg bg-gray-200 shadow sm:grid-cols-2 lg:grid-cols-4">
+        <div className="bg-white p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-500">Cash drawer</span>
+            <BanknotesIcon className="h-6 w-6 text-blue-600" />
           </div>
-          <div className="stat-title">Cash drawer</div>
-          <div className="stat-value">৳{drawerBalance}</div>
-          <div className="stat-desc">Physical cash on hand</div>
+          <div className="mt-1 text-2xl font-bold text-gray-900">৳{drawerBalance}</div>
+          <div className="text-xs text-gray-400">Physical cash on hand</div>
         </div>
-        <div className="stat">
-          <div className="stat-figure text-primary">
-            <WalletIcon className="h-8 w-8" />
+        <div className="bg-white p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-500">Total e-cash</span>
+            <WalletIcon className="h-6 w-6 text-blue-600" />
           </div>
-          <div className="stat-title">Total e-cash</div>
-          <div className="stat-value">৳{totalEcash}</div>
-          <div className="stat-desc">Across all wallets</div>
+          <div className="mt-1 text-2xl font-bold text-gray-900">৳{totalEcash}</div>
+          <div className="text-xs text-gray-400">Across all wallets</div>
         </div>
-        <div className="stat">
-          <div className="stat-title">Pending requests</div>
-          <div className="stat-value">{pendingCount}</div>
+        <div className="bg-white p-4">
+          <span className="text-xs text-gray-500">Pending requests</span>
+          <div className="mt-1 text-2xl font-bold text-gray-900">{pendingCount}</div>
         </div>
-        <div className="stat">
-          <div className="stat-title">Fulfilled requests</div>
-          <div className="stat-value">{fulfilledCount}</div>
+        <div className="bg-white p-4">
+          <span className="text-xs text-gray-500">Fulfilled requests</span>
+          <div className="mt-1 text-2xl font-bold text-gray-900">{fulfilledCount}</div>
         </div>
       </div>
 
       <TitleCard title="E-cash wallets">
         {wallets.length === 0 ? (
-          <p className="text-base-content/60">
+          <p className="text-gray-500">
             No e-cash yet — ask a coordinator to send some using the form below.
           </p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {wallets.map((wallet) => (
-              <div key={wallet.id} className="stats shadow">
-                <div className="stat">
-                  <div className="stat-figure text-primary">
-                    <WalletIcon className="h-8 w-8" />
-                  </div>
-                  <div className="stat-title">{wallet.provider.name}</div>
-                  <div className="stat-value">৳{wallet.balance}</div>
+              <div key={wallet.id} className="rounded-lg bg-white p-4 shadow">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500">{wallet.provider.name}</span>
+                  <WalletIcon className="h-6 w-6 text-blue-600" />
                 </div>
+                <div className="mt-1 text-2xl font-bold text-gray-900">৳{wallet.balance}</div>
               </div>
             ))}
           </div>
@@ -283,29 +284,37 @@ export default function AgentDashboard() {
       </TitleCard>
 
       <TitleCard title="My provider applications">
-        <p className="text-sm text-base-content/60 -mt-2 mb-3">
+        <p className="-mt-2 mb-3 text-sm text-gray-500">
           Apply to a provider first. You can request and transact only with providers that approve you.
         </p>
-        <form onSubmit={applyToProvider} className="flex flex-col sm:flex-row gap-3 items-start">
+        <form onSubmit={applyToProvider} className="flex flex-col items-start gap-3 sm:flex-row">
           <select
             value={selectedProvider}
             onChange={(e) => setSelectedProvider(e.target.value)}
-            className="select w-full sm:w-64"
+            className={`${inputClass} bg-white sm:w-64`}
           >
             <option value="">Pick a provider</option>
             {allProviders.map((provider) => (
               <option key={provider.id} value={provider.id}>{provider.name}</option>
             ))}
           </select>
-          <button type="submit" className="btn btn-primary">Apply</button>
+          <button
+            type="submit"
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+          >
+            Apply
+          </button>
         </form>
-        {providerError && <p className="text-error text-sm mt-2">{providerError}</p>}
+        {providerError && <p className="mt-2 text-sm text-red-600">{providerError}</p>}
         {providerApplications.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-3">
+          <div className="mt-3 flex flex-wrap gap-2">
             {providerApplications.map((application) => (
-              <span key={application.id} className="badge badge-lg gap-2">
+              <span
+                key={application.id}
+                className="inline-flex items-center gap-2 rounded-full border border-gray-300 px-3 py-1 text-sm text-gray-700"
+              >
                 {application.provider.name}
-                <span className="opacity-60 capitalize">({application.status})</span>
+                <span className="capitalize text-gray-400">({application.status})</span>
               </span>
             ))}
           </div>
@@ -314,32 +323,32 @@ export default function AgentDashboard() {
 
       <TitleCard title="Cash in / Cash out">
         <div>
-          <p className="text-sm text-base-content/60">
+          <p className="text-sm text-gray-500">
             Cash-in moves money from e-cash into your drawer. Cash-out
             moves it back the other way.
           </p>
 
-          <form onSubmit={handleMoveSubmit} className="flex flex-col sm:flex-row gap-3 mt-2 items-start">
-            <fieldset className="fieldset w-full sm:w-36">
-              <label className="label">Type</label>
+          <form onSubmit={handleMoveSubmit} className="mt-2 flex flex-col items-start gap-3 sm:flex-row">
+            <div className="w-full sm:w-36">
+              <label className="mb-1 block text-sm font-medium text-gray-700">Type</label>
               <select
                 name="type"
                 value={moveData.type}
                 onChange={handleMoveChange}
-                className="select w-full"
+                className={`${inputClass} bg-white`}
               >
                 <option value="cash-in">Cash in</option>
                 <option value="cash-out">Cash out</option>
               </select>
-            </fieldset>
+            </div>
 
-            <fieldset className="fieldset w-full sm:w-40">
-              <label className="label">Provider</label>
+            <div className="w-full sm:w-40">
+              <label className="mb-1 block text-sm font-medium text-gray-700">Provider</label>
               <select
                 name="providerId"
                 value={moveData.providerId}
                 onChange={handleMoveChange}
-                className="select w-full"
+                className={`${inputClass} bg-white`}
               >
                 <option value="">Pick a provider</option>
                 {providers.map((provider) => (
@@ -348,56 +357,59 @@ export default function AgentDashboard() {
                   </option>
                 ))}
               </select>
-            </fieldset>
+            </div>
 
-            <fieldset className="fieldset w-full sm:w-40">
-              <label className="label">Amount</label>
+            <div className="w-full sm:w-40">
+              <label className="mb-1 block text-sm font-medium text-gray-700">Amount</label>
               <input
                 type="number"
                 name="amount"
                 value={moveData.amount}
                 onChange={handleMoveChange}
                 placeholder="1000"
-                className="input w-full"
+                className={inputClass}
               />
-            </fieldset>
+            </div>
 
-            <button type="submit" className="btn btn-primary sm:mt-6">
+            <button
+              type="submit"
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 sm:mt-6"
+            >
               Confirm
             </button>
           </form>
 
-          {moveError && <p className="text-error text-sm mt-1">{moveError}</p>}
+          {moveError && <p className="mt-1 text-sm text-red-600">{moveError}</p>}
         </div>
       </TitleCard>
 
       <TitleCard title="Request liquidity">
         <div>
-          <p className="text-sm text-base-content/60">
+          <p className="text-sm text-gray-500">
             Choose whether you need e-cash or physical cash.
           </p>
 
-          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 mt-2 items-start">
-            <fieldset className="fieldset w-full sm:w-40">
-              <label className="label">I need</label>
+          <form onSubmit={handleSubmit} className="mt-2 flex flex-col items-start gap-3 sm:flex-row">
+            <div className="w-full sm:w-40">
+              <label className="mb-1 block text-sm font-medium text-gray-700">I need</label>
               <select
                 name="type"
                 value={formData.type}
                 onChange={handleChange}
-                className="select w-full"
+                className={`${inputClass} bg-white`}
               >
                 <option value="e_cash">E-cash</option>
                 <option value="physical_cash">Physical cash</option>
               </select>
-            </fieldset>
+            </div>
 
-            <fieldset className="fieldset w-full sm:w-40">
-              <label className="label">Provider</label>
+            <div className="w-full sm:w-40">
+              <label className="mb-1 block text-sm font-medium text-gray-700">Provider</label>
               <select
                 name="providerId"
                 value={formData.providerId}
                 onChange={handleChange}
-                className="select w-full"
+                className={`${inputClass} bg-white`}
               >
                 <option value="">Pick a provider</option>
                 {providers.map((provider) => (
@@ -406,69 +418,80 @@ export default function AgentDashboard() {
                   </option>
                 ))}
               </select>
-            </fieldset>
+            </div>
 
-            <fieldset className="fieldset w-full sm:w-40">
-              <label className="label">Amount</label>
+            <div className="w-full sm:w-40">
+              <label className="mb-1 block text-sm font-medium text-gray-700">Amount</label>
               <input
                 type="number"
                 name="amount"
                 value={formData.amount}
                 onChange={handleChange}
                 placeholder="5000"
-                className="input w-full"
+                className={inputClass}
               />
-            </fieldset>
+            </div>
 
-            <button type="submit" className="btn btn-primary sm:mt-6">
+            <button
+              type="submit"
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 sm:mt-6"
+            >
               Send request
             </button>
           </form>
 
-          {error && <p className="text-error text-sm mt-1">{error}</p>}
+          {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
         </div>
       </TitleCard>
 
       <TitleCard title="My liquidity requests">
         {requests.length === 0 ? (
-          <p className="text-base-content/60">You haven't asked for e-cash yet.</p>
+          <p className="text-gray-500">You haven't asked for e-cash yet.</p>
         ) : (
-          <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100">
-            <table className="table table-zebra">
+          <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+            <table className="w-full text-left text-sm">
               <thead>
                 <tr>
-                  <th>Provider</th>
-                  <th>Amount</th>
-                  <th>Type</th>
-                  <th>Status</th>
-                  <th></th>
-                  <th>Requested</th>
-                  <th>Fulfilled</th>
+                  <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Provider</th>
+                  <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Amount</th>
+                  <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Type</th>
+                  <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Status</th>
+                  <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500"></th>
+                  <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Requested</th>
+                  <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Fulfilled</th>
                 </tr>
               </thead>
               <tbody>
                 {requests.map((req) => (
-                  <tr key={req.id}>
-                    <td>{req.provider.name}</td>
-                    <td>৳{req.amount}</td>
-                    <td>{req.type === "physical_cash" ? "Physical cash" : "E-cash"}</td>
-                  <td>
-                    <span className={`badge ${statusBadgeClass(req.status)} capitalize`}>
-                      {req.status}
-                    </span>
-                  </td>
-                  <td>
-                    {req.status === "pending" && (
-                      <button
-                        onClick={() => cancelRequest(req.id)}
-                        className="btn btn-ghost btn-error btn-sm"
+                  <tr key={req.id} className="odd:bg-white even:bg-gray-50">
+                    <td className="border-b border-gray-100 px-4 py-2">{req.provider.name}</td>
+                    <td className="border-b border-gray-100 px-4 py-2">৳{req.amount}</td>
+                    <td className="border-b border-gray-100 px-4 py-2">
+                      {req.type === "physical_cash" ? "Physical cash" : "E-cash"}
+                    </td>
+                    <td className="border-b border-gray-100 px-4 py-2">
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${statusBadgeClass(req.status)}`}
                       >
-                        Cancel
-                      </button>
-                    )}
-                  </td>
-                    <td>{new Date(req.requestedAt).toLocaleString()}</td>
-                    <td>{req.fulfilledAt ? new Date(req.fulfilledAt).toLocaleString() : "—"}</td>
+                        {req.status}
+                      </span>
+                    </td>
+                    <td className="border-b border-gray-100 px-4 py-2">
+                      {req.status === "pending" && (
+                        <button
+                          onClick={() => cancelRequest(req.id)}
+                          className="rounded-md px-2.5 py-1 text-xs font-semibold text-red-600 hover:bg-red-50"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </td>
+                    <td className="border-b border-gray-100 px-4 py-2">
+                      {new Date(req.requestedAt).toLocaleString()}
+                    </td>
+                    <td className="border-b border-gray-100 px-4 py-2">
+                      {req.fulfilledAt ? new Date(req.fulfilledAt).toLocaleString() : "—"}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -479,38 +502,42 @@ export default function AgentDashboard() {
 
       <TitleCard title="Transaction history">
         {transactions.length === 0 ? (
-          <p className="text-base-content/60">No cash-in/cash-out yet.</p>
+          <p className="text-gray-500">No cash-in/cash-out yet.</p>
         ) : (
-          <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100">
-            <table className="table table-zebra">
+          <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+            <table className="w-full text-left text-sm">
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Type</th>
-                  <th>Provider</th>
-                  <th>Amount</th>
-                  <th>Drawer after</th>
-                  <th>Wallet after</th>
+                  <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Date</th>
+                  <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Type</th>
+                  <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Provider</th>
+                  <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Amount</th>
+                  <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Drawer after</th>
+                  <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Wallet after</th>
                 </tr>
               </thead>
               <tbody>
                 {[...transactions].reverse().map((tx) => (
-                  <tr key={tx.id}>
-                    <td>{new Date(tx.createdAt).toLocaleString()}</td>
-                    <td>
+                  <tr key={tx.id} className="odd:bg-white even:bg-gray-50">
+                    <td className="border-b border-gray-100 px-4 py-2">
+                      {new Date(tx.createdAt).toLocaleString()}
+                    </td>
+                    <td className="border-b border-gray-100 px-4 py-2">
                       <span
                         className={
-                          "badge capitalize " +
-                          (tx.type === "cash_in" ? "badge-success" : "badge-warning")
+                          "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize " +
+                          (tx.type === "cash_in"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-amber-100 text-amber-800")
                         }
                       >
                         {tx.type === "cash_in" ? "Cash in" : "Cash out"}
                       </span>
                     </td>
-                    <td>{tx.provider.name}</td>
-                    <td>৳{tx.amount}</td>
-                    <td>৳{tx.drawerBalanceAfter}</td>
-                    <td>৳{tx.walletBalanceAfter}</td>
+                    <td className="border-b border-gray-100 px-4 py-2">{tx.provider.name}</td>
+                    <td className="border-b border-gray-100 px-4 py-2">৳{tx.amount}</td>
+                    <td className="border-b border-gray-100 px-4 py-2">৳{tx.drawerBalanceAfter}</td>
+                    <td className="border-b border-gray-100 px-4 py-2">৳{tx.walletBalanceAfter}</td>
                   </tr>
                 ))}
               </tbody>

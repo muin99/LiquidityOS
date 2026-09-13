@@ -168,73 +168,76 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="flex justify-center py-24">
-        <span className="loading loading-spinner loading-lg" />
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600" />
       </div>
     );
   }
 
+  const inputClass =
+    "w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
+
   return (
     <div className="flex flex-col gap-8">
-      <div className="stats shadow w-full">
-        <div className="stat">
-          <div className="stat-figure text-primary">
-            <UsersIcon className="h-8 w-8" />
+      <div className="grid grid-cols-1 gap-px overflow-hidden rounded-lg bg-gray-200 shadow sm:grid-cols-2 lg:grid-cols-4">
+        <div className="bg-white p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-500">Pending registrations</span>
+            <UsersIcon className="h-6 w-6 text-blue-600" />
           </div>
-          <div className="stat-title">Pending registrations</div>
-          <div className="stat-value">{pendingUsers.length}</div>
+          <div className="mt-1 text-2xl font-bold text-gray-900">{pendingUsers.length}</div>
         </div>
-        <div className="stat">
-          <div className="stat-figure text-primary">
-            <BuildingOfficeIcon className="h-8 w-8" />
+        <div className="bg-white p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-500">Pending join requests</span>
+            <BuildingOfficeIcon className="h-6 w-6 text-blue-600" />
           </div>
-          <div className="stat-title">Pending join requests</div>
-          <div className="stat-value">{pendingApplications.length}</div>
+          <div className="mt-1 text-2xl font-bold text-gray-900">{pendingApplications.length}</div>
         </div>
-        <div className="stat">
-          <div className="stat-figure text-primary">
-            <MapPinIcon className="h-8 w-8" />
+        <div className="bg-white p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-500">Areas</span>
+            <MapPinIcon className="h-6 w-6 text-blue-600" />
           </div>
-          <div className="stat-title">Areas</div>
-          <div className="stat-value">{areas.length}</div>
+          <div className="mt-1 text-2xl font-bold text-gray-900">{areas.length}</div>
         </div>
-        <div className="stat">
-          <div className="stat-figure text-primary">
-            <WalletIcon className="h-8 w-8" />
+        <div className="bg-white p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-500">Providers</span>
+            <WalletIcon className="h-6 w-6 text-blue-600" />
           </div>
-          <div className="stat-title">Providers</div>
-          <div className="stat-value">{providers.length}</div>
+          <div className="mt-1 text-2xl font-bold text-gray-900">{providers.length}</div>
         </div>
       </div>
 
       <TitleCard title="Pending registrations">
-        <p className="text-sm text-base-content/60 -mt-2 mb-3">
+        <p className="-mt-2 mb-3 text-sm text-gray-500">
           Agents, coordinators, and providers all start here — coordinator join
           requests to a specific provider are decided by that provider, not by
           admin.
         </p>
         {pendingUsers.length === 0 ? (
-          <p className="text-base-content/60">Nothing waiting for approval.</p>
+          <p className="text-gray-500">Nothing waiting for approval.</p>
         ) : (
           <div className="flex flex-col gap-2">
             {pendingUsers.map((user) => (
               <div
                 key={user.id}
-                className="flex items-center justify-between bg-base-100 border border-base-300 px-4 py-3 rounded-box"
+                className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3"
               >
                 <div>
-                  <p className="font-medium">{user.fullName}</p>
-                  <p className="text-sm text-base-content/60 capitalize">
+                  <p className="font-medium text-gray-900">{user.fullName}</p>
+                  <p className="text-sm capitalize text-gray-500">
                     {user.role}
                     {user.area && <> — {user.area.name}</>}
                     {user.provider && <> — {user.provider.name}</>}
                   </p>
-                  <p className="text-xs text-base-content/50">
+                  <p className="text-xs text-gray-400">
                     Registered {new Date(user.createdAt).toLocaleString()}
                   </p>
                 </div>
                 <button
                   onClick={() => approveUser(user.id)}
-                  className="btn btn-success btn-sm"
+                  className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700"
                 >
                   Approve
                 </button>
@@ -245,41 +248,41 @@ export default function AdminDashboard() {
       </TitleCard>
 
       <TitleCard title="All people">
-        <p className="text-sm text-base-content/60 -mt-2 mb-3">
+        <p className="-mt-2 mb-3 text-sm text-gray-500">
           Agents, coordinators, providers, and admins in one place.
         </p>
-        <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100">
-          <table className="table table-zebra">
+        <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+          <table className="w-full text-left text-sm">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Role</th>
-                <th>Area / provider</th>
-                <th>Status</th>
-                <th></th>
+                <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Name</th>
+                <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Role</th>
+                <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Area / provider</th>
+                <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Status</th>
+                <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500"></th>
               </tr>
             </thead>
             <tbody>
               {users.map((user) => (
-                <tr key={user.id}>
-                  <td>
-                    <div className="font-medium">{user.fullName}</div>
-                    <div className="text-xs text-base-content/60">
-                      {user.email || user.phone}
-                    </div>
+                <tr key={user.id} className="odd:bg-white even:bg-gray-50">
+                  <td className="border-b border-gray-100 px-4 py-2">
+                    <div className="font-medium text-gray-900">{user.fullName}</div>
+                    <div className="text-xs text-gray-500">{user.email || user.phone}</div>
                   </td>
-                  <td className="capitalize">{user.role}</td>
-                  <td>{user.provider?.name || user.area?.name || "-"}</td>
-                  <td>
-                    <span className="badge badge-outline capitalize">
+                  <td className="border-b border-gray-100 px-4 py-2 capitalize">{user.role}</td>
+                  <td className="border-b border-gray-100 px-4 py-2">
+                    {user.provider?.name || user.area?.name || "-"}
+                  </td>
+                  <td className="border-b border-gray-100 px-4 py-2">
+                    <span className="inline-flex items-center rounded-full border border-gray-300 px-2.5 py-0.5 text-xs font-medium capitalize text-gray-600">
                       {user.status}
                     </span>
                   </td>
-                  <td>
+                  <td className="border-b border-gray-100 px-4 py-2">
                     {(user.status === "pending" || user.status === "suspended") && (
                       <button
                         onClick={() => approveUser(user.id)}
-                        className="btn btn-success btn-sm"
+                        className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700"
                       >
                         {user.status === "suspended" ? "Activate" : "Approve"}
                       </button>
@@ -287,14 +290,14 @@ export default function AdminDashboard() {
                     {user.status === "active" && (
                       <button
                         onClick={() => restrictUser(user.id)}
-                        className="btn btn-warning btn-sm ml-2"
+                        className="ml-2 rounded-md bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600"
                       >
                         Restrict
                       </button>
                     )}
                     <button
                       onClick={() => deleteUser(user.id, user.fullName)}
-                      className="btn btn-ghost btn-error btn-sm ml-2"
+                      className="ml-2 rounded-md px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50"
                     >
                       Delete
                     </button>
@@ -308,35 +311,33 @@ export default function AdminDashboard() {
 
       <TitleCard title="Pending coordinator join requests">
         {pendingApplications.length === 0 ? (
-          <p className="text-base-content/60">
-            Nothing waiting for a decision.
-          </p>
+          <p className="text-gray-500">Nothing waiting for a decision.</p>
         ) : (
           <div className="flex flex-col gap-2">
             {pendingApplications.map((app) => (
               <div
                 key={app.id}
-                className="flex items-center justify-between bg-base-100 border border-base-300 px-4 py-3 rounded-box"
+                className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3"
               >
                 <div>
-                  <p className="font-medium">{app.coordinator.fullName}</p>
-                  <p className="text-sm text-base-content/60">
+                  <p className="font-medium text-gray-900">{app.coordinator.fullName}</p>
+                  <p className="text-sm text-gray-500">
                     wants to become a coordinator for {app.provider.name}
                   </p>
-                  <p className="text-xs text-base-content/50">
+                  <p className="text-xs text-gray-400">
                     Applied {new Date(app.appliedAt).toLocaleString()}
                   </p>
                 </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => decideApplication(app.id, "approved")}
-                    className="btn btn-success btn-sm"
+                    className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700"
                   >
                     Approve
                   </button>
                   <button
                     onClick={() => decideApplication(app.id, "rejected")}
-                    className="btn btn-ghost btn-sm"
+                    className="rounded-md px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-100"
                   >
                     Reject
                   </button>
@@ -347,47 +348,53 @@ export default function AdminDashboard() {
         )}
       </TitleCard>
 
-      {actionError && <p className="text-error text-sm">{actionError}</p>}
+      {actionError && <p className="text-sm text-red-600">{actionError}</p>}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <TitleCard title="Add an area">
-          <p className="text-sm text-base-content/60">
+          <p className="text-sm text-gray-500">
             Agents and coordinators need an area to pick when they sign up.
           </p>
 
-          <form onSubmit={handleAddArea} className="flex flex-col gap-3 mt-2">
-            <fieldset className="fieldset">
-              <label className="label">Name</label>
+          <form onSubmit={handleAddArea} className="mt-2 flex flex-col gap-3">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">Name</label>
               <input
                 type="text"
                 value={areaName}
                 onChange={(e) => setAreaName(e.target.value)}
                 placeholder="Dhaka North"
-                className="input w-full"
+                className={inputClass}
               />
-            </fieldset>
+            </div>
 
-            <fieldset className="fieldset">
-              <label className="label">Region</label>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">Region</label>
               <input
                 type="text"
                 value={areaRegion}
                 onChange={(e) => setAreaRegion(e.target.value)}
                 placeholder="Dhaka"
-                className="input w-full"
+                className={inputClass}
               />
-            </fieldset>
+            </div>
 
-            <button type="submit" className="btn btn-primary">
+            <button
+              type="submit"
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+            >
               Add area
             </button>
-            {areaError && <p className="text-error text-sm">{areaError}</p>}
+            {areaError && <p className="text-sm text-red-600">{areaError}</p>}
           </form>
 
           {areas.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-3">
+            <div className="mt-3 flex flex-wrap gap-2">
               {areas.map((area) => (
-                <span key={area.id} className="badge badge-outline">
+                <span
+                  key={area.id}
+                  className="inline-flex items-center rounded-full border border-gray-300 px-2.5 py-0.5 text-xs font-medium text-gray-600"
+                >
                   {area.name}
                 </span>
               ))}
@@ -396,38 +403,39 @@ export default function AdminDashboard() {
         </TitleCard>
 
         <TitleCard title="Add a provider">
-          <p className="text-sm text-base-content/60">
+          <p className="text-sm text-gray-500">
             A "provider" role account needs to pick one of these when they
             sign up.
           </p>
 
-          <form
-            onSubmit={handleAddProvider}
-            className="flex flex-col gap-3 mt-2"
-          >
-            <fieldset className="fieldset">
-              <label className="label">Name</label>
+          <form onSubmit={handleAddProvider} className="mt-2 flex flex-col gap-3">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">Name</label>
               <input
                 type="text"
                 value={providerName}
                 onChange={(e) => setProviderName(e.target.value)}
                 placeholder="bKash"
-                className="input w-full"
+                className={inputClass}
               />
-            </fieldset>
+            </div>
 
-            <button type="submit" className="btn btn-primary">
+            <button
+              type="submit"
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+            >
               Add provider
             </button>
-            {providerError && (
-              <p className="text-error text-sm">{providerError}</p>
-            )}
+            {providerError && <p className="text-sm text-red-600">{providerError}</p>}
           </form>
 
           {providers.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-3">
+            <div className="mt-3 flex flex-wrap gap-2">
               {providers.map((provider) => (
-                <span key={provider.id} className="badge badge-outline">
+                <span
+                  key={provider.id}
+                  className="inline-flex items-center rounded-full border border-gray-300 px-2.5 py-0.5 text-xs font-medium text-gray-600"
+                >
                   {provider.name}
                 </span>
               ))}

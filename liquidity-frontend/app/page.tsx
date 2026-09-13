@@ -2,64 +2,60 @@ import Link from "next/link";
 
 export default function HomePage() {
   return (
-    <main className="flex-1 flex flex-col bg-base-200">
-      <div className="hero py-20">
-        <div className="hero-content text-center">
-          <div className="max-w-xl">
-            <h1 className="text-4xl font-bold">Liquidity Lite</h1>
-            <p className="py-6 text-base-content/70">
-              A simple platform that connects field agents, liquidity
-              coordinators, and mobile-money providers — so cash never
-              runs dry in the field.
-            </p>
-            <div className="flex justify-center gap-4">
-              <Link href="/login" className="btn btn-primary">
-                Log in
-              </Link>
-              <Link href="/register" className="btn btn-outline">
-                Create an account
-              </Link>
-            </div>
+    <main className="flex flex-1 flex-col bg-gray-100">
+      <div className="flex flex-col items-center px-4 py-20 text-center">
+        <div className="max-w-xl">
+          <h1 className="text-4xl font-bold text-gray-900">Liquidity Lite</h1>
+          <p className="py-6 text-gray-500">
+            A simple platform that connects field agents, liquidity
+            coordinators, and mobile-money providers — so cash never
+            runs dry in the field.
+          </p>
+          <div className="flex justify-center gap-4">
+            <Link
+              href="/login"
+              className="rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+            >
+              Log in
+            </Link>
+            <Link
+              href="/register"
+              className="rounded-md border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+            >
+              Create an account
+            </Link>
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto w-full px-6 pb-20">
-        <h2 className="text-lg font-semibold mb-4 text-center">
+      <div className="mx-auto w-full max-w-4xl px-6 pb-20">
+        <h2 className="mb-4 text-center text-lg font-semibold text-gray-900">
           Four roles, one platform
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="card bg-base-100 shadow">
-            <div className="card-body items-center text-center">
-              <h3 className="card-title">Agent</h3>
-              <p className="text-sm text-base-content/60">
-                Cash drawer, e-cash wallets, and requests
-              </p>
-            </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-lg bg-white p-6 text-center shadow">
+            <h3 className="font-semibold text-gray-900">Agent</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Cash drawer, e-cash wallets, and requests
+            </p>
           </div>
-          <div className="card bg-base-100 shadow">
-            <div className="card-body items-center text-center">
-              <h3 className="card-title">Coordinator</h3>
-              <p className="text-sm text-base-content/60">
-                Fulfill requests, apply to providers
-              </p>
-            </div>
+          <div className="rounded-lg bg-white p-6 text-center shadow">
+            <h3 className="font-semibold text-gray-900">Coordinator</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Fulfill requests, apply to providers
+            </p>
           </div>
-          <div className="card bg-base-100 shadow">
-            <div className="card-body items-center text-center">
-              <h3 className="card-title">Provider</h3>
-              <p className="text-sm text-base-content/60">
-                Approve coordinators wanting to join
-              </p>
-            </div>
+          <div className="rounded-lg bg-white p-6 text-center shadow">
+            <h3 className="font-semibold text-gray-900">Provider</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Approve coordinators wanting to join
+            </p>
           </div>
-          <div className="card bg-base-100 shadow">
-            <div className="card-body items-center text-center">
-              <h3 className="card-title">Admin</h3>
-              <p className="text-sm text-base-content/60">
-                Approve registrations
-              </p>
-            </div>
+          <div className="rounded-lg bg-white p-6 text-center shadow">
+            <h3 className="font-semibold text-gray-900">Admin</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Approve registrations
+            </p>
           </div>
         </div>
       </div>

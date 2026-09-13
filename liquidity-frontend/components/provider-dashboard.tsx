@@ -174,81 +174,78 @@ export default function ProviderDashboard() {
   if (loading) {
     return (
       <div className="flex justify-center py-24">
-        <span className="loading loading-spinner loading-lg" />
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600" />
       </div>
     );
   }
 
+  const inputClass =
+    "w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
+
   return (
     <div className="flex flex-col gap-8">
-      <div className="alert">
-        <span>
-          You are managing <b>{providerName}</b>.
-        </span>
+      <div className="rounded-lg bg-blue-50 p-4 text-blue-900">
+        You are managing <b>{providerName}</b>.
       </div>
 
-      <div className="stats shadow w-full">
-        <div className="stat">
-          <div className="stat-figure text-primary">
-            <UserGroupIcon className="h-8 w-8" />
+      <div className="grid grid-cols-1 gap-px overflow-hidden rounded-lg bg-gray-200 shadow sm:grid-cols-3 lg:grid-cols-6">
+        <div className="bg-white p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-500">Coordinator join requests</span>
+            <UserGroupIcon className="h-6 w-6 text-blue-600" />
           </div>
-          <div className="stat-title">Coordinator join requests</div>
-          <div className="stat-value">{applications.length}</div>
+          <div className="mt-1 text-2xl font-bold text-gray-900">{applications.length}</div>
         </div>
-        <div className="stat">
-          <div className="stat-title">Agent join requests</div>
-          <div className="stat-value">{agentApplications.length}</div>
+        <div className="bg-white p-4">
+          <span className="text-xs text-gray-500">Agent join requests</span>
+          <div className="mt-1 text-2xl font-bold text-gray-900">{agentApplications.length}</div>
         </div>
-        <div className="stat">
-          <div className="stat-title">Open liquidity requests</div>
-          <div className="stat-value">
+        <div className="bg-white p-4">
+          <span className="text-xs text-gray-500">Open liquidity requests</span>
+          <div className="mt-1 text-2xl font-bold text-gray-900">
             {requests.filter((request) => request.status === "pending" || request.status === "accepted").length}
           </div>
         </div>
-        <div className="stat">
-          <div className="stat-title">Completed swaps</div>
-          <div className="stat-value">{transactions.length}</div>
+        <div className="bg-white p-4">
+          <span className="text-xs text-gray-500">Completed swaps</span>
+          <div className="mt-1 text-2xl font-bold text-gray-900">{transactions.length}</div>
         </div>
-        <div className="stat">
-          <div className="stat-title">Today's cash in</div>
-          <div className="stat-value">৳{dailySummary.cashIn}</div>
+        <div className="bg-white p-4">
+          <span className="text-xs text-gray-500">Today's cash in</span>
+          <div className="mt-1 text-2xl font-bold text-gray-900">৳{dailySummary.cashIn}</div>
         </div>
-        <div className="stat">
-          <div className="stat-title">Today's cash out</div>
-          <div className="stat-value">৳{dailySummary.cashOut}</div>
+        <div className="bg-white p-4">
+          <span className="text-xs text-gray-500">Today's cash out</span>
+          <div className="mt-1 text-2xl font-bold text-gray-900">৳{dailySummary.cashOut}</div>
         </div>
       </div>
 
       <TitleCard title="Provider reserve balances">
-        <p className="text-sm text-base-content/60 -mt-2 mb-3">
+        <p className="-mt-2 mb-3 text-sm text-gray-500">
           Available liquidity held by {providerName} for its network.
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="stats shadow">
-            <div className="stat">
-              <div className="stat-title">Physical cash reserve</div>
-              <div className="stat-value">৳{balances.cash}</div>
-            </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="rounded-lg bg-white p-4 shadow">
+            <span className="text-xs text-gray-500">Physical cash reserve</span>
+            <div className="mt-1 text-2xl font-bold text-gray-900">৳{balances.cash}</div>
           </div>
-          <div className="stats shadow">
-            <div className="stat">
-              <div className="stat-title">E-cash reserve</div>
-              <div className="stat-value">৳{balances.ecash}</div>
-            </div>
+          <div className="rounded-lg bg-white p-4 shadow">
+            <span className="text-xs text-gray-500">E-cash reserve</span>
+            <div className="mt-1 text-2xl font-bold text-gray-900">৳{balances.ecash}</div>
           </div>
         </div>
       </TitleCard>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <TitleCard title="Add provider reserve">
-          <p className="text-sm text-base-content/60">
+          <p className="text-sm text-gray-500">
             Record cash or e-cash received from your external bank, vault, or MFS account.
           </p>
-          <form onSubmit={addReserve} className="flex flex-col gap-3 mt-2">
+          <form onSubmit={addReserve} className="mt-2 flex flex-col gap-3">
             <select
               value={reserveData.type}
               onChange={(e) => setReserveData({ ...reserveData, type: e.target.value })}
-              className="select w-full"
+              className={`${inputClass} bg-white`}
             >
               <option value="e_cash">E-cash</option>
               <option value="physical_cash">Physical cash</option>
@@ -258,22 +255,50 @@ export default function ProviderDashboard() {
               value={reserveData.amount}
               onChange={(e) => setReserveData({ ...reserveData, amount: e.target.value })}
               placeholder="50000"
-              className="input w-full"
+              className={inputClass}
             />
-            <button type="submit" className="btn btn-primary">Add reserve</button>
+            <button
+              type="submit"
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+            >
+              Add reserve
+            </button>
           </form>
         </TitleCard>
 
         <TitleCard title="Coordinator funding requests">
-          <p className="text-sm text-base-content/60">
+          <p className="text-sm text-gray-500">
             Coordinators request what they need; fulfill the request from your reserve.
           </p>
-          {supplyRequests.length === 0 ? <p className="text-base-content/60 mt-3">No funding requests waiting.</p> : (
-            <div className="flex flex-col gap-2 mt-3">
+          {supplyRequests.length === 0 ? (
+            <p className="mt-3 text-gray-500">No funding requests waiting.</p>
+          ) : (
+            <div className="mt-3 flex flex-col gap-2">
               {supplyRequests.map((request) => (
-                <div key={request.id} className="flex items-center justify-between border border-base-300 px-3 py-2 rounded-box gap-3">
-                  <div><p className="font-medium">{request.coordinator.fullName}</p><p className="text-sm text-base-content/60">Needs ৳{request.amount} {request.type === "physical_cash" ? "physical cash" : "e-cash"}</p></div>
-                  <div className="flex gap-2"><button onClick={() => decideSupplyRequest(request.id, "fulfill")} className="btn btn-success btn-sm">Fulfill</button><button onClick={() => decideSupplyRequest(request.id, "reject")} className="btn btn-ghost btn-sm">Reject</button></div>
+                <div
+                  key={request.id}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 px-3 py-2"
+                >
+                  <div>
+                    <p className="font-medium text-gray-900">{request.coordinator.fullName}</p>
+                    <p className="text-sm text-gray-500">
+                      Needs ৳{request.amount} {request.type === "physical_cash" ? "physical cash" : "e-cash"}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => decideSupplyRequest(request.id, "fulfill")}
+                      className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700"
+                    >
+                      Fulfill
+                    </button>
+                    <button
+                      onClick={() => decideSupplyRequest(request.id, "reject")}
+                      className="rounded-md px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-100"
+                    >
+                      Reject
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -281,18 +306,26 @@ export default function ProviderDashboard() {
         </TitleCard>
       </div>
 
-      {moneyError && <p className="text-error text-sm">{moneyError}</p>}
+      {moneyError && <p className="text-sm text-red-600">{moneyError}</p>}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <TitleCard title="Approved agents">
           {approvedAgents.length === 0 ? (
-            <p className="text-base-content/60">No approved agents yet.</p>
+            <p className="text-gray-500">No approved agents yet.</p>
           ) : (
             <div className="flex flex-col gap-2">
               {approvedAgents.map((application) => (
-                <div key={application.id} className="flex items-center justify-between border border-base-300 px-3 py-2 rounded-box">
-                  <span>{application.agent.fullName}</span>
-                  <button onClick={() => restrictAgent(application.id)} className="btn btn-warning btn-sm">Restrict</button>
+                <div
+                  key={application.id}
+                  className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2"
+                >
+                  <span className="text-gray-900">{application.agent.fullName}</span>
+                  <button
+                    onClick={() => restrictAgent(application.id)}
+                    className="rounded-md bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600"
+                  >
+                    Restrict
+                  </button>
                 </div>
               ))}
             </div>
@@ -301,13 +334,21 @@ export default function ProviderDashboard() {
 
         <TitleCard title="Approved coordinators">
           {coordinators.length === 0 ? (
-            <p className="text-base-content/60">No approved coordinators yet.</p>
+            <p className="text-gray-500">No approved coordinators yet.</p>
           ) : (
             <div className="flex flex-col gap-2">
               {coordinators.map((application) => (
-                <div key={application.id} className="flex items-center justify-between border border-base-300 px-3 py-2 rounded-box">
-                  <span>{application.coordinator.fullName}</span>
-                  <button onClick={() => restrictCoordinator(application.id)} className="btn btn-warning btn-sm">Restrict</button>
+                <div
+                  key={application.id}
+                  className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2"
+                >
+                  <span className="text-gray-900">{application.coordinator.fullName}</span>
+                  <button
+                    onClick={() => restrictCoordinator(application.id)}
+                    className="rounded-md bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600"
+                  >
+                    Restrict
+                  </button>
                 </div>
               ))}
             </div>
@@ -317,20 +358,33 @@ export default function ProviderDashboard() {
 
       <TitleCard title="Agent join requests">
         {agentApplications.length === 0 ? (
-          <p className="text-base-content/60">Nothing waiting for a decision.</p>
+          <p className="text-gray-500">Nothing waiting for a decision.</p>
         ) : (
           <div className="flex flex-col gap-2">
             {agentApplications.map((application) => (
-              <div key={application.id} className="flex items-center justify-between bg-base-100 border border-base-300 px-4 py-3 rounded-box">
+              <div
+                key={application.id}
+                className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3"
+              >
                 <div>
-                  <p className="font-medium">{application.agent.fullName}</p>
-                  <p className="text-xs text-base-content/50">
+                  <p className="font-medium text-gray-900">{application.agent.fullName}</p>
+                  <p className="text-xs text-gray-400">
                     Applied {new Date(application.appliedAt).toLocaleString()}
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => decideAgent(application.id, "approved")} className="btn btn-success btn-sm">Approve</button>
-                  <button onClick={() => decideAgent(application.id, "rejected")} className="btn btn-ghost btn-sm">Reject</button>
+                  <button
+                    onClick={() => decideAgent(application.id, "approved")}
+                    className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => decideAgent(application.id, "rejected")}
+                    className="rounded-md px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-100"
+                  >
+                    Reject
+                  </button>
                 </div>
               </div>
             ))}
@@ -340,27 +394,29 @@ export default function ProviderDashboard() {
 
       <TitleCard title="Provider reserve and supply history">
         {reserveHistory.length === 0 ? (
-          <p className="text-base-content/60">No reserve top-up or coordinator supply yet.</p>
+          <p className="text-gray-500">No reserve top-up or coordinator supply yet.</p>
         ) : (
-          <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100">
-            <table className="table table-zebra">
+          <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+            <table className="w-full text-left text-sm">
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Activity</th>
-                  <th>Coordinator</th>
-                  <th>Amount</th>
+                  <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Date</th>
+                  <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Activity</th>
+                  <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Coordinator</th>
+                  <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Amount</th>
                 </tr>
               </thead>
               <tbody>
                 {reserveHistory.map((transaction) => (
-                  <tr key={transaction.id}>
-                    <td>{new Date(transaction.createdAt).toLocaleString()}</td>
-                    <td>
+                  <tr key={transaction.id} className="odd:bg-white even:bg-gray-50">
+                    <td className="border-b border-gray-100 px-4 py-2">
+                      {new Date(transaction.createdAt).toLocaleString()}
+                    </td>
+                    <td className="border-b border-gray-100 px-4 py-2">
                       {transaction.type === "provider_top_up" ? "Reserve top-up" : "Coordinator supply"}
                     </td>
-                    <td>{transaction.coordinator?.fullName || "-"}</td>
-                    <td>৳{transaction.amount}</td>
+                    <td className="border-b border-gray-100 px-4 py-2">{transaction.coordinator?.fullName || "-"}</td>
+                    <td className="border-b border-gray-100 px-4 py-2">৳{transaction.amount}</td>
                   </tr>
                 ))}
               </tbody>
@@ -371,33 +427,33 @@ export default function ProviderDashboard() {
 
       <TitleCard title="Coordinator join requests">
         {applications.length === 0 ? (
-          <p className="text-base-content/60">Nothing waiting for a decision.</p>
+          <p className="text-gray-500">Nothing waiting for a decision.</p>
         ) : (
           <div className="flex flex-col gap-2">
             {applications.map((app) => (
               <div
                 key={app.id}
-                className="flex items-center justify-between bg-base-100 border border-base-300 px-4 py-3 rounded-box"
+                className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3"
               >
                 <div>
-                  <p className="font-medium">{app.coordinator.fullName}</p>
-                  <p className="text-sm text-base-content/60">
+                  <p className="font-medium text-gray-900">{app.coordinator.fullName}</p>
+                  <p className="text-sm text-gray-500">
                     wants to become a coordinator for {app.provider.name}
                   </p>
-                  <p className="text-xs text-base-content/50">
+                  <p className="text-xs text-gray-400">
                     Applied {new Date(app.appliedAt).toLocaleString()}
                   </p>
                 </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleDecide(app.id, "approved")}
-                    className="btn btn-success btn-sm"
+                    className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700"
                   >
                     Approve
                   </button>
                   <button
                     onClick={() => handleDecide(app.id, "rejected")}
-                    className="btn btn-ghost btn-sm"
+                    className="rounded-md px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-100"
                   >
                     Reject
                   </button>
@@ -406,38 +462,42 @@ export default function ProviderDashboard() {
             ))}
           </div>
         )}
-        {actionError && <p className="text-error text-sm mt-1">{actionError}</p>}
+        {actionError && <p className="mt-1 text-sm text-red-600">{actionError}</p>}
       </TitleCard>
 
       <TitleCard title="Liquidity request history">
         {requests.length === 0 ? (
-          <p className="text-base-content/60">No liquidity requests yet.</p>
+          <p className="text-gray-500">No liquidity requests yet.</p>
         ) : (
-          <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100">
-            <table className="table table-zebra">
+          <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+            <table className="w-full text-left text-sm">
               <thead>
                 <tr>
-                  <th>Agent</th>
-                  <th>Need</th>
-                  <th>Amount</th>
-                  <th>Coordinator</th>
-                  <th>Status</th>
-                  <th>Requested</th>
+                  <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Agent</th>
+                  <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Need</th>
+                  <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Amount</th>
+                  <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Coordinator</th>
+                  <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Status</th>
+                  <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Requested</th>
                 </tr>
               </thead>
               <tbody>
                 {requests.map((request) => (
-                  <tr key={request.id}>
-                    <td>{request.agent.fullName}</td>
-                    <td>{request.type === "physical_cash" ? "Physical cash" : "E-cash"}</td>
-                    <td>৳{request.amount}</td>
-                    <td>{request.coordinator?.fullName || "Not assigned"}</td>
-                    <td>
-                      <span className="badge badge-outline capitalize">
+                  <tr key={request.id} className="odd:bg-white even:bg-gray-50">
+                    <td className="border-b border-gray-100 px-4 py-2">{request.agent.fullName}</td>
+                    <td className="border-b border-gray-100 px-4 py-2">
+                      {request.type === "physical_cash" ? "Physical cash" : "E-cash"}
+                    </td>
+                    <td className="border-b border-gray-100 px-4 py-2">৳{request.amount}</td>
+                    <td className="border-b border-gray-100 px-4 py-2">{request.coordinator?.fullName || "Not assigned"}</td>
+                    <td className="border-b border-gray-100 px-4 py-2">
+                      <span className="inline-flex items-center rounded-full border border-gray-300 px-2.5 py-0.5 text-xs font-medium capitalize text-gray-600">
                         {request.status}
                       </span>
                     </td>
-                    <td>{new Date(request.requestedAt).toLocaleString()}</td>
+                    <td className="border-b border-gray-100 px-4 py-2">
+                      {new Date(request.requestedAt).toLocaleString()}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -448,25 +508,27 @@ export default function ProviderDashboard() {
 
       <TitleCard title="Completed liquidity swaps">
         {transactions.length === 0 ? (
-          <p className="text-base-content/60">No completed swaps yet.</p>
+          <p className="text-gray-500">No completed swaps yet.</p>
         ) : (
-          <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100">
-            <table className="table table-zebra">
+          <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+            <table className="w-full text-left text-sm">
               <thead>
                 <tr>
-                  <th>Agent</th>
-                  <th>Coordinator</th>
-                  <th>Amount</th>
-                  <th>Completed</th>
+                  <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Agent</th>
+                  <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Coordinator</th>
+                  <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Amount</th>
+                  <th className="border-b border-gray-200 px-4 py-2 font-medium text-gray-500">Completed</th>
                 </tr>
               </thead>
               <tbody>
                 {transactions.map((transaction) => (
-                  <tr key={transaction.id}>
-                    <td>{transaction.agent.fullName}</td>
-                    <td>{transaction.coordinator?.fullName || "-"}</td>
-                    <td>৳{transaction.amount}</td>
-                    <td>{new Date(transaction.createdAt).toLocaleString()}</td>
+                  <tr key={transaction.id} className="odd:bg-white even:bg-gray-50">
+                    <td className="border-b border-gray-100 px-4 py-2">{transaction.agent.fullName}</td>
+                    <td className="border-b border-gray-100 px-4 py-2">{transaction.coordinator?.fullName || "-"}</td>
+                    <td className="border-b border-gray-100 px-4 py-2">৳{transaction.amount}</td>
+                    <td className="border-b border-gray-100 px-4 py-2">
+                      {new Date(transaction.createdAt).toLocaleString()}
+                    </td>
                   </tr>
                 ))}
               </tbody>

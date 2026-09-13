@@ -16,8 +16,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" data-theme="corporate">
-      <body className={`${geist.className} min-h-screen flex flex-col`}>
+    <html lang="en">
+      <body
+        className={`${geist.className} min-h-screen flex flex-col bg-gray-100 text-gray-900`}
+      >
         <Navbar />
         {children}
       </body>
