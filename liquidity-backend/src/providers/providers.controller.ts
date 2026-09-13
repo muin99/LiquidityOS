@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ProvidersService } from './providers.service';
 import { CreateProviderDto } from './dto/create-provider.dto';
@@ -26,5 +26,29 @@ export class ProvidersController {
   @Post()
   create(@Body() dto: CreateProviderDto) {
     return this.providersService.create(dto.name);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Get('all')
+  findAllForAdmin() {
+    return this.providersService.findAllForAdmin();
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Patch(':id/deactivate')
+  deactivate(@Param('id') id: string) {
+    return this.providersService.setActive(id, false);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Patch(':id/activate')
+  activate(@Param('id') id: string) {
+    return this.providersService.setActive(id, true);
   }
 }

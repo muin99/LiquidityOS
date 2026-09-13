@@ -13,4 +13,7 @@ export class Area {
 
   @Column()
   region: string;
+
+  @Column({ default: true })
+  isActive: boolean;
 }

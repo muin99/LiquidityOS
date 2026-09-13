@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Provider } from './provider.entity';
@@ -11,6 +11,10 @@ export class ProvidersService {
   ) {}
 
   findAll() {
+    return this.providersRepo.find({ where: { isActive: true } });
+  }
+
+  findAllForAdmin() {
     return this.providersRepo.find();
   }
 
@@ -20,6 +24,13 @@ export class ProvidersService {
 
   create(name: string) {
     const provider = this.providersRepo.create({ name });
+    return this.providersRepo.save(provider);
+  }
+
+  async setActive(id: string, isActive: boolean) {
+    const provider = await this.providersRepo.findOne({ where: { id } });
+    if (!provider) throw new NotFoundException('Provider not found');
+    provider.isActive = isActive;
     return this.providersRepo.save(provider);
   }
 }

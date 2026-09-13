@@ -10,12 +10,16 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { UserStatus } from '../common/enums/user-status.enum';
 import { UserRole } from '../common/enums/user-role.enum';
+import { AreasService } from '../areas/areas.service';
+import { ProvidersService } from '../providers/providers.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    private areasService: AreasService,
+    private providersService: ProvidersService,
   ) {}
 
   // Step 1 of the flow: sign up. Account is created but NOT active yet —
@@ -35,6 +39,20 @@ export class AuthService {
       throw new BadRequestException(
         'areaId is required when registering as an agent or coordinator',
       );
+    }
+
+    if (dto.areaId) {
+      const area = await this.areasService.findById(dto.areaId);
+      if (!area || !area.isActive) {
+        throw new BadRequestException('Please choose an active area');
+      }
+    }
+
+    if (dto.providerId) {
+      const provider = await this.providersService.findById(dto.providerId);
+      if (!provider || !provider.isActive) {
+        throw new BadRequestException('Please choose an active provider');
+      }
     }
 
     const user = await this.usersService.create({
