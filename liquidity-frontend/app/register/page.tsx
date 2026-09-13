@@ -133,10 +133,13 @@ export default function RegisterPage() {
     }
   }
 
+  const inputClass =
+    "w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
+
   if (submitted) {
     return (
-      <main className="flex flex-1 items-center justify-center bg-gray-100 px-4 py-16">
-        <div className="max-w-sm rounded-lg border border-green-200 bg-green-50 p-4 text-green-800">
+      <main className="flex flex-1 items-center justify-center bg-gray-900 px-4 py-16">
+        <div className="max-w-sm rounded-lg border border-green-800 bg-green-900/30 p-4 text-green-300">
           {successMessage} Redirecting you to the login page…
         </div>
       </main>
@@ -144,23 +147,23 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="flex flex-1 items-center justify-center bg-gray-100 px-4 py-16">
+    <main className="flex flex-1 items-center justify-center bg-gray-900 px-4 py-16">
       <div className="w-full max-w-4xl overflow-hidden rounded-lg shadow-xl">
-        <div className="grid grid-cols-1 bg-white md:grid-cols-2">
+        <div className="grid grid-cols-1 bg-gray-800 md:grid-cols-2">
           <AuthIntro />
 
           <div className="px-8 py-16">
-            <h2 className="mb-2 text-center text-2xl font-semibold text-gray-900">
+            <h2 className="mb-2 text-center text-2xl font-semibold text-gray-100">
               Create an account
             </h2>
-            <p className="mb-4 text-center text-sm text-gray-500">
+            <p className="mb-4 text-center text-sm text-gray-400">
               Sign up as an agent, a coordinator, or a provider. An admin has
               to approve your account before you can log in.
             </p>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-3">
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1 block text-sm font-medium text-gray-300">
                   Full name
                 </label>
                 <input
@@ -168,13 +171,13 @@ export default function RegisterPage() {
                   name="fullName"
                   value={formData.fullName}
                   onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className={inputClass}
                   placeholder="Karim Ahmed"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1 block text-sm font-medium text-gray-300">
                   Email
                 </label>
                 <input
@@ -182,13 +185,13 @@ export default function RegisterPage() {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className={inputClass}
                   placeholder="you@example.com"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1 block text-sm font-medium text-gray-300">
                   Password
                 </label>
                 <input
@@ -196,13 +199,13 @@ export default function RegisterPage() {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className={inputClass}
                   placeholder="••••••••"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1 block text-sm font-medium text-gray-300">
                   Confirm password
                 </label>
                 <input
@@ -210,20 +213,20 @@ export default function RegisterPage() {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className={inputClass}
                   placeholder="••••••••"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1 block text-sm font-medium text-gray-300">
                   I am a
                 </label>
                 <select
                   name="role"
                   value={formData.role}
                   onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className={inputClass}
                 >
                   <option value="agent">Agent</option>
                   <option value="coordinator">Coordinator</option>
@@ -233,14 +236,14 @@ export default function RegisterPage() {
 
               {formData.role !== "provider" && (
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                  <label className="mb-1 block text-sm font-medium text-gray-300">
                     Area
                   </label>
                   <select
                     name="areaId"
                     value={formData.areaId}
                     onChange={handleChange}
-                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className={inputClass}
                   >
                     <option value="">Pick your area</option>
                     {areas.map((area) => (
@@ -254,14 +257,14 @@ export default function RegisterPage() {
 
               {formData.role === "provider" && (
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                  <label className="mb-1 block text-sm font-medium text-gray-300">
                     Which provider are you
                   </label>
                   <select
                     name="providerId"
                     value={formData.providerId}
                     onChange={handleChange}
-                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className={inputClass}
                   >
                     <option value="">Pick a provider</option>
                     {providers.map((provider) => (
@@ -273,7 +276,7 @@ export default function RegisterPage() {
                 </div>
               )}
 
-              {error && <p className="text-sm text-red-600">{error}</p>}
+              {error && <p className="text-sm text-red-400">{error}</p>}
 
               <button
                 type="submit"
@@ -284,9 +287,9 @@ export default function RegisterPage() {
               </button>
             </form>
 
-            <p className="mt-4 text-center text-sm text-gray-600">
+            <p className="mt-4 text-center text-sm text-gray-400">
               Already have an account?{" "}
-              <Link href="/login" className="text-blue-600 hover:underline">
+              <Link href="/login" className="text-blue-400 hover:underline">
                 Log in
               </Link>
             </p>

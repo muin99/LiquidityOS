@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
-/* Plain Tailwind only now — no component library on top. Every
+/* Plain Tailwind only — no component library on top. Every
    button/card/input/badge etc. in this app is just a plain className
-   full of Tailwind utility classes, written out by hand. */
+   full of Tailwind utility classes, written out by hand.
+
+   This site is dark mode only, all the time — no light/dark switch,
+   just one dark color palette used everywhere. This one line tells
+   the browser itself to draw its own native bits (scrollbars, the
+   little arrows on a <select>, date pickers) dark too, so they don't
+   stick out as a light rectangle in an otherwise dark page. */
+html {
+  color-scheme: dark;
+}

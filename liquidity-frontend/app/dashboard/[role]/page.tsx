@@ -68,24 +68,24 @@ export default function DashboardPage() {
 
   if (!VALID_ROLES.includes(role)) {
     return (
-      <main className="flex flex-1 items-center justify-center bg-gray-100">
-        <p className="text-lg text-gray-700">Unknown dashboard: {role}</p>
+      <main className="flex flex-1 items-center justify-center bg-gray-900">
+        <p className="text-lg text-gray-300">Unknown dashboard: {role}</p>
       </main>
     );
   }
 
   if (!ready) {
     return (
-      <main className="flex flex-1 items-center justify-center bg-gray-100">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600" />
+      <main className="flex flex-1 items-center justify-center bg-gray-900">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-700 border-t-blue-500" />
       </main>
     );
   }
 
   return (
-    <main className="flex-1 bg-gray-100 px-6 py-10">
+    <main className="flex-1 bg-gray-900 px-6 py-10">
       <div className="mx-auto flex max-w-4xl flex-col gap-6">
-        <h1 className="text-2xl font-bold capitalize text-gray-900">{role} dashboard</h1>
+        <h1 className="text-2xl font-bold capitalize text-gray-100">{role} dashboard</h1>
 
         {role === "agent" && <AgentDashboard />}
         {role === "coordinator" && <CoordinatorDashboard />}

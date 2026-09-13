@@ -18,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geist.className} min-h-screen flex flex-col bg-gray-100 text-gray-900`}
+        className={`${geist.className} min-h-screen flex flex-col bg-gray-900 text-gray-100`}
       >
         <Navbar />
         {children}

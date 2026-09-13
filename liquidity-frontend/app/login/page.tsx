@@ -60,22 +60,22 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex flex-1 items-center justify-center bg-gray-100 px-4 py-16">
+    <main className="flex flex-1 items-center justify-center bg-gray-900 px-4 py-16">
       <div className="w-full max-w-4xl overflow-hidden rounded-lg shadow-xl">
-        <div className="grid grid-cols-1 bg-white md:grid-cols-2">
+        <div className="grid grid-cols-1 bg-gray-800 md:grid-cols-2">
           <AuthIntro />
 
           <div className="px-8 py-16">
-            <h2 className="mb-2 text-center text-2xl font-semibold text-gray-900">
+            <h2 className="mb-2 text-center text-2xl font-semibold text-gray-100">
               Log in
             </h2>
-            <p className="mb-4 text-center text-sm text-gray-500">
+            <p className="mb-4 text-center text-sm text-gray-400">
               Use the email or phone you registered with.
             </p>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-3">
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1 block text-sm font-medium text-gray-300">
                   Email or phone
                 </label>
                 <input
@@ -84,12 +84,12 @@ export default function LoginPage() {
                   value={formData.login}
                   onChange={handleChange}
                   placeholder="you@example.com"
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1 block text-sm font-medium text-gray-300">
                   Password
                 </label>
                 <input
@@ -98,11 +98,11 @@ export default function LoginPage() {
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="********"
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
 
-              {error && <p className="text-sm text-red-600">{error}</p>}
+              {error && <p className="text-sm text-red-400">{error}</p>}
 
               <button
                 type="submit"
@@ -112,9 +112,9 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <p className="mt-4 text-center text-sm text-gray-600">
+            <p className="mt-4 text-center text-sm text-gray-400">
               No account yet?{" "}
-              <Link href="/register" className="text-blue-600 hover:underline">
+              <Link href="/register" className="text-blue-400 hover:underline">
                 Register
               </Link>
             </p>
