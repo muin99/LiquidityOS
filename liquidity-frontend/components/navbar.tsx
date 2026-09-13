@@ -2,22 +2,26 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 export default function Navbar() {
   const router = useRouter();
-
-  // We dont know if anyone is logged in until the page actually
-  // loads in the browser, so this starts as null and gets filled
-  // in by the effect below.
+  const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
 
+  // This navbar never unmounts as you click around the app (its
+  // outside the page content, in the root layout), so we have to
+  // check localStorage again every time the url changes — otherwise
+  // it would keep showing whatever it saw on the very first page
+  // load, even after logging in or out on a different page.
   useEffect(() => {
     const userJson = localStorage.getItem("user");
     if (userJson) {
       setUser(JSON.parse(userJson));
+    } else {
+      setUser(null);
     }
-  }, []);
+  }, [pathname]);
 
   function handleLogout() {
     localStorage.removeItem("access_token");
