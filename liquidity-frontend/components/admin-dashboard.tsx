@@ -194,6 +194,9 @@ export default function AdminDashboard() {
                     {user.area && <> — {user.area.name}</>}
                     {user.provider && <> — {user.provider.name}</>}
                   </p>
+                  <p className="text-xs text-base-content/50">
+                    Registered {new Date(user.createdAt).toLocaleString()}
+                  </p>
                 </div>
                 <button
                   onClick={() => approveUser(user.id)}
@@ -223,6 +226,9 @@ export default function AdminDashboard() {
                   <p className="font-medium">{app.coordinator.fullName}</p>
                   <p className="text-sm text-base-content/60">
                     wants to become a coordinator for {app.provider.name}
+                  </p>
+                  <p className="text-xs text-base-content/50">
+                    Applied {new Date(app.appliedAt).toLocaleString()}
                   </p>
                 </div>
                 <div className="flex gap-2">

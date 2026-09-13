@@ -14,6 +14,7 @@ export default function AgentDashboard() {
   const [wallets, setWallets] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
   const [providers, setProviders] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
 
   // Every request that needs to prove who we are just sends this
   // header by hand, no auto-attaching magic behind the scenes.
@@ -34,10 +35,18 @@ export default function AgentDashboard() {
     setRequests(response.data);
   }
 
+  // The agent's own cash-in/cash-out log, so they can see exactly
+  // what happened and when, not just the current balances.
+  async function loadTransactions() {
+    const response = await axios.get("/api/wallets/transactions", authHeader);
+    setTransactions(response.data);
+  }
+
   useEffect(() => {
     async function loadEverything() {
       await loadWallets();
       await loadRequests();
+      await loadTransactions();
 
       const providersResponse = await axios.get("/api/providers");
       setProviders(providersResponse.data);
@@ -88,6 +97,7 @@ export default function AgentDashboard() {
       );
 
       await loadWallets();
+      await loadTransactions();
       setMoveError("");
       setMoveData({ ...moveData, amount: "" });
     } catch (err) {
@@ -146,9 +156,33 @@ export default function AgentDashboard() {
     );
   }
 
+  // A couple of simple totals, worked out from the data we already
+  // loaded above — nothing new fetched, just plain addition/counting.
+  let totalEcash = 0;
+  for (const wallet of wallets) {
+    totalEcash += Number(wallet.balance);
+  }
+
+  let pendingCount = 0;
+  let fulfilledCount = 0;
+  for (const req of requests) {
+    if (req.status === "pending") pendingCount++;
+    if (req.status === "fulfilled") fulfilledCount++;
+  }
+
+  // Just picks a daisyUI badge color to match the status word, so
+  // its easier to scan a long list at a glance.
+  function statusBadgeClass(status: string) {
+    if (status === "pending") return "badge-warning";
+    if (status === "accepted") return "badge-info";
+    if (status === "fulfilled") return "badge-success";
+    if (status === "rejected") return "badge-error";
+    return "badge-outline";
+  }
+
   return (
     <div className="flex flex-col gap-8">
-      <div className="stats shadow w-full">
+      <div className="stats shadow w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <div className="stat">
           <div className="stat-figure text-primary">
             <BanknotesIcon className="h-8 w-8" />
@@ -156,6 +190,22 @@ export default function AgentDashboard() {
           <div className="stat-title">Cash drawer</div>
           <div className="stat-value">৳{drawerBalance}</div>
           <div className="stat-desc">Physical cash on hand</div>
+        </div>
+        <div className="stat">
+          <div className="stat-figure text-primary">
+            <WalletIcon className="h-8 w-8" />
+          </div>
+          <div className="stat-title">Total e-cash</div>
+          <div className="stat-value">৳{totalEcash}</div>
+          <div className="stat-desc">Across all wallets</div>
+        </div>
+        <div className="stat">
+          <div className="stat-title">Pending requests</div>
+          <div className="stat-value">{pendingCount}</div>
+        </div>
+        <div className="stat">
+          <div className="stat-title">Fulfilled requests</div>
+          <div className="stat-value">{fulfilledCount}</div>
         </div>
       </div>
 
@@ -286,28 +336,80 @@ export default function AgentDashboard() {
       </TitleCard>
 
       <TitleCard title="My e-cash requests">
-        <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Provider</th>
-                <th>Amount</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {requests.map((req) => (
-                <tr key={req.id}>
-                  <td>{req.provider.name}</td>
-                  <td>৳{req.amount}</td>
-                  <td>
-                    <span className="badge badge-outline capitalize">{req.status}</span>
-                  </td>
+        {requests.length === 0 ? (
+          <p className="text-base-content/60">You haven't asked for e-cash yet.</p>
+        ) : (
+          <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100">
+            <table className="table table-zebra">
+              <thead>
+                <tr>
+                  <th>Provider</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Requested</th>
+                  <th>Fulfilled</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {requests.map((req) => (
+                  <tr key={req.id}>
+                    <td>{req.provider.name}</td>
+                    <td>৳{req.amount}</td>
+                    <td>
+                      <span className={`badge ${statusBadgeClass(req.status)} capitalize`}>
+                        {req.status}
+                      </span>
+                    </td>
+                    <td>{new Date(req.requestedAt).toLocaleString()}</td>
+                    <td>{req.fulfilledAt ? new Date(req.fulfilledAt).toLocaleString() : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </TitleCard>
+
+      <TitleCard title="Transaction history">
+        {transactions.length === 0 ? (
+          <p className="text-base-content/60">No cash-in/cash-out yet.</p>
+        ) : (
+          <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100">
+            <table className="table table-zebra">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Provider</th>
+                  <th>Amount</th>
+                  <th>Drawer after</th>
+                  <th>Wallet after</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...transactions].reverse().map((tx) => (
+                  <tr key={tx.id}>
+                    <td>{new Date(tx.createdAt).toLocaleString()}</td>
+                    <td>
+                      <span
+                        className={
+                          "badge capitalize " +
+                          (tx.type === "cash_in" ? "badge-success" : "badge-warning")
+                        }
+                      >
+                        {tx.type === "cash_in" ? "Cash in" : "Cash out"}
+                      </span>
+                    </td>
+                    <td>{tx.provider.name}</td>
+                    <td>৳{tx.amount}</td>
+                    <td>৳{tx.drawerBalanceAfter}</td>
+                    <td>৳{tx.walletBalanceAfter}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </TitleCard>
     </div>
   );

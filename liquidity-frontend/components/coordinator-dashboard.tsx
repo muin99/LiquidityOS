@@ -91,6 +91,16 @@ export default function CoordinatorDashboard() {
     );
   }
 
+  // Just picks a daisyUI badge color to match the status word, so
+  // its easier to scan a long list at a glance.
+  function statusBadgeClass(status: string) {
+    if (status === "pending") return "badge-warning";
+    if (status === "accepted") return "badge-info";
+    if (status === "fulfilled" || status === "approved") return "badge-success";
+    if (status === "rejected") return "badge-error";
+    return "badge-outline";
+  }
+
   return (
     <div className="flex flex-col gap-8">
       <div className="stats shadow w-full">
@@ -119,13 +129,14 @@ export default function CoordinatorDashboard() {
           <p className="text-base-content/60">Nothing waiting right now.</p>
         ) : (
           <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100">
-            <table className="table">
+            <table className="table table-zebra">
               <thead>
                 <tr>
                   <th>Agent</th>
                   <th>Provider</th>
                   <th>Amount</th>
                   <th>Status</th>
+                  <th>Requested</th>
                   <th></th>
                 </tr>
               </thead>
@@ -136,10 +147,11 @@ export default function CoordinatorDashboard() {
                     <td>{req.provider.name}</td>
                     <td>৳{req.amount}</td>
                     <td>
-                      <span className="badge badge-outline capitalize">
+                      <span className={`badge ${statusBadgeClass(req.status)} capitalize`}>
                         {req.status}
                       </span>
                     </td>
+                    <td>{new Date(req.requestedAt).toLocaleString()}</td>
                     <td>
                       <button
                         onClick={() => handleFulfill(req.id)}
@@ -198,13 +210,31 @@ export default function CoordinatorDashboard() {
         {applications.length === 0 ? (
           <p className="text-base-content/60">You haven't applied to any providers yet.</p>
         ) : (
-          <div className="flex flex-wrap gap-3">
-            {applications.map((app) => (
-              <div key={app.id} className="badge badge-lg gap-2">
-                {app.provider.name}
-                <span className="opacity-60 capitalize">({app.status})</span>
-              </div>
-            ))}
+          <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100">
+            <table className="table table-zebra">
+              <thead>
+                <tr>
+                  <th>Provider</th>
+                  <th>Status</th>
+                  <th>Applied on</th>
+                  <th>Decided on</th>
+                </tr>
+              </thead>
+              <tbody>
+                {applications.map((app) => (
+                  <tr key={app.id}>
+                    <td>{app.provider.name}</td>
+                    <td>
+                      <span className={`badge ${statusBadgeClass(app.status)} capitalize`}>
+                        {app.status}
+                      </span>
+                    </td>
+                    <td>{new Date(app.appliedAt).toLocaleString()}</td>
+                    <td>{app.decidedAt ? new Date(app.decidedAt).toLocaleString() : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </TitleCard>
