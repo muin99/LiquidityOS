@@ -44,6 +44,13 @@ export class AgentProvidersService {
     });
   }
 
+  approvedApplications(providerId: string) {
+    return this.repo.find({
+      where: { providerId, status: ApplicationStatus.APPROVED },
+      relations: ['agent'],
+    });
+  }
+
   async decide(
     id: string,
     status: ApplicationStatus.APPROVED | ApplicationStatus.REJECTED,
@@ -60,6 +67,20 @@ export class AgentProvidersService {
 
     application.status = status;
     application.decidedAt = new Date();
+    return this.repo.save(application);
+  }
+
+  async restrict(id: string, requester: { role: UserRole; providerId?: string }) {
+    const application = await this.repo.findOne({ where: { id } });
+    if (!application) throw new NotFoundException('Agent application not found');
+    if (
+      requester.role === UserRole.PROVIDER &&
+      application.providerId !== requester.providerId
+    ) {
+      throw new ForbiddenException('This agent is not part of your provider');
+    }
+
+    application.status = ApplicationStatus.PENDING;
     return this.repo.save(application);
   }
 }

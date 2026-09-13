@@ -28,6 +28,15 @@ export class AuthService {
       );
     }
 
+    if (
+      (dto.role === UserRole.AGENT || dto.role === UserRole.COORDINATOR) &&
+      !dto.areaId
+    ) {
+      throw new BadRequestException(
+        'areaId is required when registering as an agent or coordinator',
+      );
+    }
+
     const user = await this.usersService.create({
       fullName: dto.fullName,
       email: dto.email,

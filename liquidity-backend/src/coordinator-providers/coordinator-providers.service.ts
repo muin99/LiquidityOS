@@ -90,4 +90,19 @@ export class CoordinatorProvidersService {
     application.decidedAt = new Date();
     return this.repo.save(application);
   }
+
+  // Provider can remove an approved coordinator from its network.
+  async restrict(id: string, requester: { role: UserRole; providerId?: string }) {
+    const application = await this.repo.findOne({ where: { id } });
+    if (!application) throw new NotFoundException('Application not found');
+    if (
+      requester.role === UserRole.PROVIDER &&
+      application.providerId !== requester.providerId
+    ) {
+      throw new ForbiddenException('This coordinator is not part of your provider');
+    }
+
+    application.status = ApplicationStatus.PENDING;
+    return this.repo.save(application);
+  }
 }

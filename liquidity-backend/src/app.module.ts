@@ -9,6 +9,7 @@ import { WalletsModule } from './wallets/wallets.module';
 import { CoordinatorProvidersModule } from './coordinator-providers/coordinator-providers.module';
 import { EcashRequestsModule } from './ecash-requests/ecash-requests.module';
 import { AgentProvidersModule } from './agent-providers/agent-providers.module';
+import { ProviderSupplyRequestsModule } from './provider-supply-requests/provider-supply-requests.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { AgentProvidersModule } from './agent-providers/agent-providers.module';
     CoordinatorProvidersModule,
     EcashRequestsModule,
     AgentProvidersModule,
+    ProviderSupplyRequestsModule,
   ],
 })
 export class AppModule {}

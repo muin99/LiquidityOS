@@ -7,7 +7,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../common/enums/user-role.enum';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { ProviderMoneyDto, ProviderSupplyDto } from './dto/provider-money.dto';
+import { ProviderMoneyDto } from './dto/provider-money.dto';
 
 // Only an agent has a cash drawer / e-cash wallets, so every route here
 // is locked to UserRole.AGENT.
@@ -31,6 +31,24 @@ export class WalletsController {
   }
 
   @Roles(UserRole.PROVIDER)
+  @Get('provider-reserve-history')
+  providerReserveHistory(@CurrentUser() user: { providerId?: string }) {
+    return this.walletsService.providerReserveHistory(user.providerId as string);
+  }
+
+  @Roles(UserRole.COORDINATOR)
+  @Get('coordinator-balances')
+  coordinatorBalances(@CurrentUser() user: { id: string }) {
+    return this.walletsService.coordinatorBalances(user.id);
+  }
+
+  @Roles(UserRole.COORDINATOR)
+  @Get('coordinator-transactions')
+  coordinatorTransactions(@CurrentUser() user: { id: string }) {
+    return this.walletsService.coordinatorTransactions(user.id);
+  }
+
+  @Roles(UserRole.PROVIDER)
   @Get('provider-balances')
   providerBalances(@CurrentUser() user: { providerId?: string }) {
     return this.walletsService.providerBalances(user.providerId as string);
@@ -50,20 +68,6 @@ export class WalletsController {
   ) {
     return this.walletsService.addProviderReserve(
       user.providerId as string,
-      dto.type,
-      dto.amount,
-    );
-  }
-
-  @Roles(UserRole.PROVIDER)
-  @Post('provider-supply')
-  supplyCoordinator(
-    @CurrentUser() user: { providerId?: string },
-    @Body() dto: ProviderSupplyDto,
-  ) {
-    return this.walletsService.supplyCoordinator(
-      user.providerId as string,
-      dto.coordinatorId,
       dto.type,
       dto.amount,
     );

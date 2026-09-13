@@ -11,6 +11,9 @@ export default function CoordinatorDashboard() {
   const [requests, setRequests] = useState<any[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
   const [providers, setProviders] = useState<any[]>([]);
+  const [balances, setBalances] = useState({ cash: 0, ecashWallets: [] as any[] });
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [supplyRequests, setSupplyRequests] = useState<any[]>([]);
   const [actionError, setActionError] = useState("");
 
   // Every request that needs to prove who we are just sends this
@@ -28,10 +31,26 @@ export default function CoordinatorDashboard() {
     setApplications(response.data);
   }
 
+  async function loadBalances() {
+    const [balancesResponse, transactionsResponse] = await Promise.all([
+      axios.get("/api/wallets/coordinator-balances", authHeader),
+      axios.get("/api/wallets/coordinator-transactions", authHeader),
+    ]);
+    setBalances(balancesResponse.data);
+    setTransactions(transactionsResponse.data);
+  }
+
+  async function loadSupplyRequests() {
+    const response = await axios.get("/api/provider-supply-requests/mine", authHeader);
+    setSupplyRequests(response.data);
+  }
+
   useEffect(() => {
     async function loadEverything() {
       await loadRequests();
       await loadApplications();
+      await loadBalances();
+      await loadSupplyRequests();
 
       const providersResponse = await axios.get("/api/providers");
       setProviders(providersResponse.data);
@@ -51,6 +70,7 @@ export default function CoordinatorDashboard() {
       await axios.patch(`/api/ecash-requests/${id}/accept`, {}, authHeader);
       await axios.patch(`/api/ecash-requests/${id}/fulfill`, {}, authHeader);
       await loadRequests();
+      await loadBalances();
       setActionError("");
     } catch (err) {
       setActionError("Something went wrong, please try again");
@@ -60,6 +80,27 @@ export default function CoordinatorDashboard() {
   // --- apply to become a coordinator for a provider ---
   const [selectedProvider, setSelectedProvider] = useState("");
   const [applyError, setApplyError] = useState("");
+  const [supplyData, setSupplyData] = useState({ providerId: "", type: "e_cash", amount: "" });
+  const [supplyError, setSupplyError] = useState("");
+
+  async function requestSupply(e: any) {
+    e.preventDefault();
+    if (!supplyData.providerId || !supplyData.amount || Number(supplyData.amount) <= 0) {
+      setSupplyError("Please pick a provider and enter an amount");
+      return;
+    }
+    try {
+      await axios.post("/api/provider-supply-requests", {
+        ...supplyData,
+        amount: Number(supplyData.amount),
+      }, authHeader);
+      await loadSupplyRequests();
+      setSupplyData({ providerId: "", type: "e_cash", amount: "" });
+      setSupplyError("");
+    } catch (err) {
+      setSupplyError("Could not send this funding request. Check that the provider approved you.");
+    }
+  }
 
   async function handleApply(e: any) {
     e.preventDefault();
@@ -118,7 +159,71 @@ export default function CoordinatorDashboard() {
           <div className="stat-title">My applications</div>
           <div className="stat-value">{applications.length}</div>
         </div>
+        <div className="stat">
+          <div className="stat-title">Cash on hand</div>
+          <div className="stat-value">৳{balances.cash}</div>
+        </div>
       </div>
+
+      <TitleCard title="My available liquidity">
+        <p className="text-sm text-base-content/60 -mt-2 mb-3">
+          Your provider supplies and completed swaps update these balances.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="stats shadow">
+            <div className="stat">
+              <div className="stat-title">Physical cash</div>
+              <div className="stat-value">৳{balances.cash}</div>
+            </div>
+          </div>
+          {balances.ecashWallets.map((wallet) => (
+            <div key={wallet.id} className="stats shadow">
+              <div className="stat">
+                <div className="stat-title">{wallet.provider.name} e-cash</div>
+                <div className="stat-value">৳{wallet.balance}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </TitleCard>
+
+      <TitleCard title="Request liquidity from a provider">
+        <p className="text-sm text-base-content/60 -mt-2 mb-3">
+          Request the cash or e-cash you need from an approved provider. The provider fulfills it from their reserve.
+        </p>
+        <form onSubmit={requestSupply} className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+          <select value={supplyData.providerId} onChange={(e) => setSupplyData({ ...supplyData, providerId: e.target.value })} className="select w-full">
+            <option value="">Pick an approved provider</option>
+            {applications.filter((app) => app.status === "approved").map((app) => (
+              <option key={app.id} value={app.providerId}>{app.provider.name}</option>
+            ))}
+          </select>
+          <select value={supplyData.type} onChange={(e) => setSupplyData({ ...supplyData, type: e.target.value })} className="select w-full">
+            <option value="e_cash">E-cash</option>
+            <option value="physical_cash">Physical cash</option>
+          </select>
+          <input type="number" value={supplyData.amount} onChange={(e) => setSupplyData({ ...supplyData, amount: e.target.value })} placeholder="10000" className="input w-full" />
+          <button type="submit" className="btn btn-primary">Request funding</button>
+        </form>
+        {supplyError && <p className="text-error text-sm mt-2">{supplyError}</p>}
+
+        {supplyRequests.length > 0 && (
+          <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100 mt-4">
+            <table className="table table-zebra">
+              <thead><tr><th>Provider</th><th>Need</th><th>Amount</th><th>Status</th><th>Requested</th></tr></thead>
+              <tbody>{supplyRequests.map((request) => (
+                <tr key={request.id}>
+                  <td>{request.provider.name}</td>
+                  <td>{request.type === "physical_cash" ? "Physical cash" : "E-cash"}</td>
+                  <td>৳{request.amount}</td>
+                  <td><span className={`badge ${statusBadgeClass(request.status)} capitalize`}>{request.status}</span></td>
+                  <td>{new Date(request.requestedAt).toLocaleString()}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+      </TitleCard>
 
       <TitleCard title="Liquidity requests from agents">
         <p className="text-sm text-base-content/60 -mt-2 mb-3">
@@ -233,6 +338,37 @@ export default function CoordinatorDashboard() {
                     </td>
                     <td>{new Date(app.appliedAt).toLocaleString()}</td>
                     <td>{app.decidedAt ? new Date(app.decidedAt).toLocaleString() : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </TitleCard>
+
+      <TitleCard title="My funding and fulfillment history">
+        {transactions.length === 0 ? (
+          <p className="text-base-content/60">No supply or fulfillment activity yet.</p>
+        ) : (
+          <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100">
+            <table className="table table-zebra">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Provider</th>
+                  <th>Agent</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transactions.map((transaction) => (
+                  <tr key={transaction.id}>
+                    <td>{new Date(transaction.createdAt).toLocaleString()}</td>
+                    <td className="capitalize">{transaction.type.replaceAll("_", " ")}</td>
+                    <td>{transaction.provider.name}</td>
+                    <td>{transaction.agent?.fullName || "-"}</td>
+                    <td>৳{transaction.amount}</td>
                   </tr>
                 ))}
               </tbody>

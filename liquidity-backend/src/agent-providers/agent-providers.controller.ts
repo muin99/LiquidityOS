@@ -40,6 +40,12 @@ export class AgentProvidersController {
     return this.service.pendingApplications(user.providerId as string);
   }
 
+  @Roles(UserRole.PROVIDER)
+  @Get('approved-for-provider')
+  approvedForProvider(@CurrentUser() user: { providerId?: string }) {
+    return this.service.approvedApplications(user.providerId as string);
+  }
+
   @Roles(UserRole.PROVIDER, UserRole.ADMIN)
   @Patch(':id/decide')
   decide(
@@ -48,5 +54,14 @@ export class AgentProvidersController {
     @CurrentUser() user: { role: UserRole; providerId?: string },
   ) {
     return this.service.decide(id, dto.status, user);
+  }
+
+  @Roles(UserRole.PROVIDER, UserRole.ADMIN)
+  @Patch(':id/restrict')
+  restrict(
+    @Param('id') id: string,
+    @CurrentUser() user: { role: UserRole; providerId?: string },
+  ) {
+    return this.service.restrict(id, user);
   }
 }

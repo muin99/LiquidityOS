@@ -16,6 +16,7 @@ import { ApplicationStatus } from '../common/enums/application-status.enum';
 import { RequestType } from '../common/enums/request-type.enum';
 import { TransactionType } from '../common/enums/transaction-type.enum';
 import { AgentProvider } from '../agent-providers/agent-provider.entity';
+import { User } from '../users/user.entity';
 
 @Injectable()
 export class EcashRequestsService {
@@ -26,6 +27,8 @@ export class EcashRequestsService {
     private coordinatorProvidersRepo: Repository<CoordinatorProvider>,
     @InjectRepository(AgentProvider)
     private agentProvidersRepo: Repository<AgentProvider>,
+    @InjectRepository(User)
+    private usersRepo: Repository<User>,
     private dataSource: DataSource,
   ) {}
 
@@ -66,16 +69,20 @@ export class EcashRequestsService {
   // actually been approved for — not every single request on the
   // whole platform.
   async pendingRequests(coordinatorId: string) {
+    const coordinator = await this.usersRepo.findOne({ where: { id: coordinatorId } });
+    if (!coordinator?.areaId) return [];
+
     const approvedProviderIds = await this.approvedProviderIdsFor(coordinatorId);
     if (approvedProviderIds.length === 0) {
       return [];
     }
 
-    return this.requestsRepo.find({
+    const requests = await this.requestsRepo.find({
       where: { status: RequestStatus.PENDING, providerId: In(approvedProviderIds) },
       relations: ['agent', 'provider'],
       order: { requestedAt: 'ASC' },
     });
+    return requests.filter((request) => request.agent.areaId === coordinator.areaId);
   }
 
   // Step 2: a coordinator says "I'll take care of this one".
@@ -94,6 +101,12 @@ export class EcashRequestsService {
       throw new ForbiddenException(
         'You are not an approved coordinator for this provider',
       );
+    }
+
+    const coordinator = await this.usersRepo.findOne({ where: { id: coordinatorId } });
+    const agent = await this.usersRepo.findOne({ where: { id: request.agentId } });
+    if (!coordinator?.areaId || coordinator.areaId !== agent?.areaId) {
+      throw new ForbiddenException('This request is outside your area');
     }
 
     request.coordinatorId = coordinatorId;

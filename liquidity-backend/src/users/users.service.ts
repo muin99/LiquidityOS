@@ -81,21 +81,21 @@ export class UsersService {
     });
   }
 
-  // Admin-only action: turn a pending account into an active one.
+  // Admin can approve a new account or activate a suspended one.
   async approve(id: string) {
     const user = await this.findById(id);
     user.status = UserStatus.ACTIVE;
     return this.usersRepo.save(user);
   }
 
-  // Restricting an account sends it back to the same pending state as a new signup.
+  // A restricted account was previously active, so it becomes suspended.
   async restrict(id: string, adminId: string) {
     if (id === adminId) {
       throw new BadRequestException('You cannot restrict your own account');
     }
 
     const user = await this.findById(id);
-    user.status = UserStatus.PENDING;
+    user.status = UserStatus.SUSPENDED;
     return this.usersRepo.save(user);
   }
 

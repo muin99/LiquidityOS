@@ -98,6 +98,10 @@ export default function RegisterPage() {
       setError("Please pick which provider you are");
       return;
     }
+    if (formData.role !== "provider" && !formData.areaId) {
+      setError("Please pick your area");
+      return;
+    }
     setError("");
     setSubmitting(true);
 
