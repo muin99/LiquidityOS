@@ -1,30 +1,51 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { mockAgentDrawer, mockAgentWallets, mockAgentRequests, mockProviders } from "@/lib/mock-data";
+import api from "@/lib/api";
 
 export default function AgentDashboard() {
-  // We pretend to "load" the agent's data, just like a real API call would.
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, []);
+  // Real data from the backend now, not fake mock data.
+  const [drawerBalance, setDrawerBalance] = useState(0);
+  const [wallets, setWallets] = useState<any[]>([]);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [providers, setProviders] = useState<any[]>([]);
 
-  // The drawer and wallets now live in state, so cash-in/cash-out can
-  // actually move money between them right here in the browser.
-  const [drawerBalance, setDrawerBalance] = useState(mockAgentDrawer.balance);
-  const [wallets, setWallets] = useState(mockAgentWallets);
-  const [requests, setRequests] = useState(mockAgentRequests);
+  // Go ask the backend "what does my stuff look like right now" and
+  // put the answer into state. We call this again after every
+  // cash-in / cash-out / request, so the numbers on screen stay fresh.
+  function loadWallets() {
+    return api.get("/wallets/me").then((response) => {
+      setDrawerBalance(Number(response.data.cashDrawer.balance));
+      setWallets(response.data.ecashWallets);
+    });
+  }
+
+  function loadRequests() {
+    return api.get("/ecash-requests/mine").then((response) => {
+      setRequests(response.data);
+    });
+  }
+
+  useEffect(() => {
+    Promise.all([
+      loadWallets(),
+      loadRequests(),
+      api.get("/providers").then((response) => setProviders(response.data)),
+    ]).then(() => {
+      setLoading(false);
+    });
+  }, []);
 
   // --- cash-in / cash-out form ---
   const [moveData, setMoveData] = useState({
     type: "cash-in",
-    provider: mockProviders[0],
+    providerId: "",
     amount: "",
   });
   const [moveError, setMoveError] = useState("");
+  const [moveSubmitting, setMoveSubmitting] = useState(false);
 
   function handleMoveChange(e: any) {
     const { name, value } = e.target;
@@ -34,65 +55,48 @@ export default function AgentDashboard() {
     });
   }
 
-  function handleMoveSubmit(e: any) {
+  async function handleMoveSubmit(e: any) {
     e.preventDefault();
 
     const amount = Number(moveData.amount);
 
+    if (!moveData.providerId) {
+      setMoveError("Please pick a provider");
+      return;
+    }
     if (!moveData.amount || amount <= 0) {
       setMoveError("Please enter an amount greater than 0");
       return;
     }
 
-    // Find this provider's wallet — the agent might not have one yet.
-    const wallet = wallets.find((w) => w.provider === moveData.provider);
-    const walletBalance = wallet ? wallet.balance : 0;
-
-    if (moveData.type === "cash-in") {
-      // Cash-in: e-cash goes OUT of the wallet, physical cash comes IN to the drawer.
-      if (amount > walletBalance) {
-        setMoveError("Not enough e-cash in this wallet");
-        return;
-      }
-
-      updateWalletBalance(moveData.provider, walletBalance - amount);
-      setDrawerBalance(drawerBalance + amount);
-    } else {
-      // Cash-out: physical cash goes OUT of the drawer, e-cash comes IN to the wallet.
-      if (amount > drawerBalance) {
-        setMoveError("Not enough cash in the drawer");
-        return;
-      }
-
-      setDrawerBalance(drawerBalance - amount);
-      updateWalletBalance(moveData.provider, walletBalance + amount);
-    }
-
     setMoveError("");
-    setMoveData({ ...moveData, amount: "" });
-  }
+    setMoveSubmitting(true);
 
-  // Update one wallet's balance, adding the wallet if it didn't exist yet.
-  function updateWalletBalance(provider: string, newBalance: number) {
-    const alreadyExists = wallets.some((w) => w.provider === provider);
+    try {
+      // moveData.type is either "cash-in" or "cash-out", which
+      // happen to also be the names of the two backend routes.
+      await api.post(`/wallets/${moveData.type}`, {
+        providerId: moveData.providerId,
+        amount,
+      });
 
-    if (alreadyExists) {
-      setWallets(
-        wallets.map((w) =>
-          w.provider === provider ? { ...w, balance: newBalance } : w,
-        ),
-      );
-    } else {
-      setWallets([...wallets, { provider, balance: newBalance }]);
+      await loadWallets();
+      setMoveData({ ...moveData, amount: "" });
+    } catch (err: any) {
+      const backendMessage = err.response && err.response.data && err.response.data.message;
+      setMoveError(backendMessage || "Something went wrong, please try again");
     }
+
+    setMoveSubmitting(false);
   }
 
   // --- e-cash request form ---
   const [formData, setFormData] = useState({
-    provider: mockProviders[0],
+    providerId: "",
     amount: "",
   });
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   function handleChange(e: any) {
     const { name, value } = e.target;
@@ -103,27 +107,35 @@ export default function AgentDashboard() {
     });
   }
 
-  function handleSubmit(e: any) {
+  async function handleSubmit(e: any) {
     e.preventDefault();
 
-    // Very basic check — no zod here, just a plain if.
+    if (!formData.providerId) {
+      setError("Please pick a provider");
+      return;
+    }
     if (!formData.amount || Number(formData.amount) <= 0) {
       setError("Please enter an amount greater than 0");
       return;
     }
 
-    const newRequest = {
-      id: `req-${Date.now()}`,
-      provider: formData.provider,
-      amount: Number(formData.amount),
-      status: "pending",
-    };
-
-    // Add the new request to the top of the list, right on this screen.
-    // There is no backend yet, so refreshing the page resets this.
-    setRequests([newRequest, ...requests]);
-    setFormData({ provider: mockProviders[0], amount: "" });
     setError("");
+    setSubmitting(true);
+
+    try {
+      await api.post("/ecash-requests", {
+        providerId: formData.providerId,
+        amount: Number(formData.amount),
+      });
+
+      await loadRequests();
+      setFormData({ providerId: "", amount: "" });
+    } catch (err: any) {
+      const backendMessage = err.response && err.response.data && err.response.data.message;
+      setError(backendMessage || "Something went wrong, please try again");
+    }
+
+    setSubmitting(false);
   }
 
   if (loading) {
@@ -146,16 +158,22 @@ export default function AgentDashboard() {
 
       <div>
         <h2 className="text-lg font-semibold mb-3">E-cash wallets</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {wallets.map((wallet) => (
-            <div key={wallet.provider} className="card bg-base-100 shadow">
-              <div className="card-body">
-                <h3 className="card-title text-base">{wallet.provider}</h3>
-                <p className="text-2xl font-bold">৳{wallet.balance}</p>
+        {wallets.length === 0 ? (
+          <p className="text-base-content/60">
+            No e-cash yet — ask a coordinator to send some using the form below.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {wallets.map((wallet) => (
+              <div key={wallet.id} className="card bg-base-100 shadow">
+                <div className="card-body">
+                  <h3 className="card-title text-base">{wallet.provider.name}</h3>
+                  <p className="text-2xl font-bold">৳{wallet.balance}</p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="card bg-base-100 shadow">
@@ -183,14 +201,15 @@ export default function AgentDashboard() {
             <fieldset className="fieldset w-full sm:w-40">
               <label className="label">Provider</label>
               <select
-                name="provider"
-                value={moveData.provider}
+                name="providerId"
+                value={moveData.providerId}
                 onChange={handleMoveChange}
                 className="select w-full"
               >
-                {mockProviders.map((provider) => (
-                  <option key={provider} value={provider}>
-                    {provider}
+                <option value="">Pick a provider</option>
+                {providers.map((provider) => (
+                  <option key={provider.id} value={provider.id}>
+                    {provider.name}
                   </option>
                 ))}
               </select>
@@ -208,7 +227,7 @@ export default function AgentDashboard() {
               />
             </fieldset>
 
-            <button type="submit" className="btn btn-primary sm:mt-6">
+            <button type="submit" disabled={moveSubmitting} className="btn btn-primary sm:mt-6">
               Confirm
             </button>
           </form>
@@ -228,14 +247,15 @@ export default function AgentDashboard() {
             <fieldset className="fieldset w-full sm:w-40">
               <label className="label">Provider</label>
               <select
-                name="provider"
-                value={formData.provider}
+                name="providerId"
+                value={formData.providerId}
                 onChange={handleChange}
                 className="select w-full"
               >
-                {mockProviders.map((provider) => (
-                  <option key={provider} value={provider}>
-                    {provider}
+                <option value="">Pick a provider</option>
+                {providers.map((provider) => (
+                  <option key={provider.id} value={provider.id}>
+                    {provider.name}
                   </option>
                 ))}
               </select>
@@ -253,7 +273,7 @@ export default function AgentDashboard() {
               />
             </fieldset>
 
-            <button type="submit" className="btn btn-primary sm:mt-6">
+            <button type="submit" disabled={submitting} className="btn btn-primary sm:mt-6">
               Send request
             </button>
           </form>
@@ -276,7 +296,7 @@ export default function AgentDashboard() {
             <tbody>
               {requests.map((req) => (
                 <tr key={req.id}>
-                  <td>{req.provider}</td>
+                  <td>{req.provider.name}</td>
                   <td>৳{req.amount}</td>
                   <td>
                     <span className="badge badge-outline capitalize">{req.status}</span>
