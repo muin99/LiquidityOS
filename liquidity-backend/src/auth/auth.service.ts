@@ -84,4 +84,21 @@ export class AuthService {
       },
     };
   }
+
+  // Step 3 (optional): whoever is holding this token, who are they?
+  // The frontend uses this on page load to check "is my saved login
+  // still good", without making the person type their password again.
+  async me(userId: string) {
+    const user = await this.usersService.findById(userId);
+    return {
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      status: user.status,
+      areaId: user.areaId,
+      providerId: user.providerId,
+    };
+  }
 }
