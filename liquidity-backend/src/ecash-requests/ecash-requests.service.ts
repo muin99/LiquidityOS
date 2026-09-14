@@ -82,7 +82,17 @@ export class EcashRequestsService {
       relations: ['agent', 'provider'],
       order: { requestedAt: 'ASC' },
     });
-    return requests.filter((request) => request.agent.areaId === coordinator.areaId);
+    const openRequests = requests.filter((request) => request.agent.areaId === coordinator.areaId);
+
+    // Keep requests this coordinator already claimed in the same list. If a
+    // balance was too low on the first try, they can top up and fulfill it
+    // later instead of the request disappearing from their dashboard.
+    const acceptedRequests = await this.requestsRepo.find({
+      where: { coordinatorId, status: RequestStatus.ACCEPTED },
+      relations: ['agent', 'provider'],
+      order: { requestedAt: 'ASC' },
+    });
+    return [...openRequests, ...acceptedRequests];
   }
 
   // Step 2: a coordinator says "I'll take care of this one".

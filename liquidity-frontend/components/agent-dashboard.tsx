@@ -5,12 +5,7 @@ import axios from "axios";
 import BanknotesIcon from "@heroicons/react/24/outline/BanknotesIcon";
 import WalletIcon from "@heroicons/react/24/outline/WalletIcon";
 import {
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-  XAxis,
+  PieChart, Pie, Cell,LineChart, Line, XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,

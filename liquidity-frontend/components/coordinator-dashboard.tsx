@@ -101,15 +101,19 @@ export default function CoordinatorDashboard() {
   // first you "accept" it (claim it as yours), then you "fulfill" it
   // (actually send the e-cash). We just do both, one after the
   // other, when the coordinator clicks the one "Fulfill" button.
-  async function handleFulfill(id: string) {
+  async function handleFulfill(request: any) {
     try {
-      await axios.patch(`/api/ecash-requests/${id}/accept`, {}, authHeader);
-      await axios.patch(`/api/ecash-requests/${id}/fulfill`, {}, authHeader);
+      if (request.status === "pending") {
+        await axios.patch(`/api/ecash-requests/${request.id}/accept`, {}, authHeader);
+      }
+      await axios.patch(`/api/ecash-requests/${request.id}/fulfill`, {}, authHeader);
       await loadRequests();
       await loadBalances();
       setActionError("");
-    } catch (err) {
-      setActionError("Something went wrong, please try again");
+    } catch (err: any) {
+      const message = err.response?.data?.message;
+      setActionError(Array.isArray(message) ? message[0] : message || "Could not fulfill this request");
+      await loadRequests();
     }
   }
 
@@ -425,10 +429,10 @@ export default function CoordinatorDashboard() {
                       </td>
                       <td className="border-b border-gray-700 px-4 py-2">
                         <button
-                          onClick={() => handleFulfill(req.id)}
+                          onClick={() => handleFulfill(req)}
                           className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
                         >
-                          Fulfill
+                          {req.status === "accepted" ? "Retry fulfill" : "Fulfill"}
                         </button>
                       </td>
                     </tr>
