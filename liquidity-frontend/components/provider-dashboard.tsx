@@ -3,7 +3,39 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import UserGroupIcon from "@heroicons/react/24/outline/UserGroupIcon";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 import TitleCard from "@/components/title-card";
+
+// One color per pie slice.
+const PIE_COLORS = ["#60a5fa", "#4ade80", "#fbbf24", "#f472b6", "#c084fc", "#22d3ee"];
+
+// Recharts draws its default slice labels in dark gray, which is
+// invisible on our dark cards — so we draw the label text ourselves
+// in a light color instead.
+function renderPieLabel(props: any) {
+  const RADIAN = Math.PI / 180;
+  const { cx, cy, midAngle, outerRadius, percent, name } = props;
+  const radius = outerRadius + 22;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  return (
+    <text x={x} y={y} fill="#e5e7eb" fontSize={12} textAnchor={x > cx ? "start" : "end"} dominantBaseline="central">
+      {`${name} ${(percent * 100).toFixed(0)}%`}
+    </text>
+  );
+}
 
 export default function ProviderDashboard() {
   const [loading, setLoading] = useState(true);
@@ -196,6 +228,19 @@ export default function ProviderDashboard() {
 
   const networkCount = agentApplications.length + applications.length;
 
+  // Turn the two reserve balances into the {name, value} shape the pie chart wants.
+  const reservePieData = [
+    { name: "Physical cash", value: Number(balances.cash) },
+    { name: "E-cash", value: Number(balances.ecash) },
+  ].filter((entry) => entry.value > 0);
+
+  // Turn the reserve/supply log into {date, amount} points, oldest
+  // first, for the bar chart.
+  const reserveChartData = [...reserveHistory].reverse().map((t) => ({
+    date: new Date(t.createdAt).toLocaleDateString(),
+    amount: Number(t.amount),
+  }));
+
   return (
     <div className="flex flex-col gap-6">
       <div className="rounded-lg bg-blue-900/30 p-4 text-blue-200">
@@ -277,6 +322,38 @@ export default function ProviderDashboard() {
                 <div className="mt-1 text-2xl font-bold text-gray-100">৳{balances.ecash}</div>
               </div>
             </div>
+          </TitleCard>
+
+          <TitleCard title="Reserve breakdown">
+            {reservePieData.length === 0 ? (
+              <p className="text-gray-400">Nothing to chart yet.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={320}>
+                <PieChart>
+                  <Pie
+                    data={reservePieData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={{ stroke: "#6b7280" }}
+                    label={renderPieLabel}
+                    outerRadius={110}
+                    dataKey="value"
+                    isAnimationActive={false}
+                  >
+                    {reservePieData.map((entry, index) => (
+                      <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151", borderRadius: "6px" }}
+                    labelStyle={{ color: "#f3f4f6" }}
+                    itemStyle={{ color: "#f3f4f6" }}
+                    formatter={(value: any) => `৳${value}`}
+                  />
+                  <Legend wrapperStyle={{ color: "#d1d5db" }} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </TitleCard>
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -526,6 +603,27 @@ export default function ProviderDashboard() {
 
       {tab === "history" && (
         <div className="flex flex-col gap-8">
+          <TitleCard title="Reserve activity">
+            {reserveChartData.length === 0 ? (
+              <p className="text-gray-400">No reserve top-up or coordinator supply yet.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={reserveChartData}>
+                  <CartesianGrid stroke="#374151" strokeDasharray="3 3" />
+                  <XAxis dataKey="date" tick={{ fill: "#9ca3af", fontSize: 12 }} />
+                  <YAxis tick={{ fill: "#9ca3af", fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151", borderRadius: "6px" }}
+                    labelStyle={{ color: "#f3f4f6" }}
+                    itemStyle={{ color: "#f3f4f6" }}
+                    formatter={(value: any) => `৳${value}`}
+                  />
+                  <Bar dataKey="amount" name="Amount" fill="#60a5fa" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </TitleCard>
+
           <TitleCard title="Provider reserve and supply history">
             {reserveHistory.length === 0 ? (
               <p className="text-gray-400">No reserve top-up or coordinator supply yet.</p>

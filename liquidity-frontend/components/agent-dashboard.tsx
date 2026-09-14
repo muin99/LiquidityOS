@@ -4,7 +4,54 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import BanknotesIcon from "@heroicons/react/24/outline/BanknotesIcon";
 import WalletIcon from "@heroicons/react/24/outline/WalletIcon";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 import TitleCard from "@/components/title-card";
+
+// One color per pie slice. If there are more wallets than colors, it
+// just loops back around to the start.
+const PIE_COLORS = [
+  "#60a5fa",
+  "#4ade80",
+  "#fbbf24",
+  "#f472b6",
+  "#c084fc",
+  "#22d3ee",
+];
+
+// Recharts draws its default slice labels in dark gray, which is
+// invisible on our dark cards — so we draw the label text ourselves
+// in a light color instead.
+function renderPieLabel(props: any) {
+  const RADIAN = Math.PI / 180;
+  const { cx, cy, midAngle, outerRadius, percent, name } = props;
+  const radius = outerRadius + 22;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="#e5e7eb"
+      fontSize={12}
+      textAnchor={x > cx ? "start" : "end"}
+      dominantBaseline="central"
+    >
+      {`${name} ${(percent * 100).toFixed(0)}%`}
+    </text>
+  );
+}
 
 export default function AgentDashboard() {
   const [loading, setLoading] = useState(true);
@@ -237,6 +284,22 @@ export default function AgentDashboard() {
   const inputClass =
     "w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
 
+  // Turn the wallet list into the {name, value} shape the pie chart wants.
+  const pieData = wallets
+    .filter((wallet) => Number(wallet.balance) > 0)
+    .map((wallet) => ({
+      name: wallet.provider.name,
+      value: Number(wallet.balance),
+    }));
+
+  // Turn the transaction log into {date, drawer, wallet} points for the
+  // line chart, oldest first so the line reads left to right.
+  const historyChartData = transactions.map((tx) => ({
+    date: new Date(tx.createdAt).toLocaleDateString(),
+    drawer: Number(tx.drawerBalanceAfter),
+    wallet: Number(tx.walletBalanceAfter),
+  }));
+
   // picks the right look for whichever tab button is active right now
   function tabClass(name: string) {
     const base = "flex items-center border-b-2 px-1 py-3 text-sm font-medium";
@@ -254,7 +317,9 @@ export default function AgentDashboard() {
             <span className="text-xs text-gray-400">Cash drawer</span>
             <BanknotesIcon className="h-6 w-6 text-blue-400" />
           </div>
-          <div className="mt-1 text-2xl font-bold text-gray-100">৳{drawerBalance}</div>
+          <div className="mt-1 text-2xl font-bold text-gray-100">
+            ৳{drawerBalance}
+          </div>
           <div className="text-xs text-gray-500">Physical cash on hand</div>
         </div>
         <div className="bg-gray-800 p-4">
@@ -262,28 +327,40 @@ export default function AgentDashboard() {
             <span className="text-xs text-gray-400">Total e-cash</span>
             <WalletIcon className="h-6 w-6 text-blue-400" />
           </div>
-          <div className="mt-1 text-2xl font-bold text-gray-100">৳{totalEcash}</div>
+          <div className="mt-1 text-2xl font-bold text-gray-100">
+            ৳{totalEcash}
+          </div>
           <div className="text-xs text-gray-500">Across all wallets</div>
         </div>
         <div className="bg-gray-800 p-4">
           <span className="text-xs text-gray-400">Pending requests</span>
-          <div className="mt-1 text-2xl font-bold text-gray-100">{pendingCount}</div>
+          <div className="mt-1 text-2xl font-bold text-gray-100">
+            {pendingCount}
+          </div>
         </div>
         <div className="bg-gray-800 p-4">
           <span className="text-xs text-gray-400">Fulfilled requests</span>
-          <div className="mt-1 text-2xl font-bold text-gray-100">{fulfilledCount}</div>
+          <div className="mt-1 text-2xl font-bold text-gray-100">
+            {fulfilledCount}
+          </div>
         </div>
       </div>
 
       <div className="border-b border-gray-700">
         <nav className="-mb-px flex gap-6 overflow-x-auto">
-          <button onClick={() => setTab("wallets")} className={tabClass("wallets")}>
+          <button
+            onClick={() => setTab("wallets")}
+            className={tabClass("wallets")}
+          >
             Wallets
           </button>
           <button onClick={() => setTab("move")} className={tabClass("move")}>
             Cash in / out
           </button>
-          <button onClick={() => setTab("requests")} className={tabClass("requests")}>
+          <button
+            onClick={() => setTab("requests")}
+            className={tabClass("requests")}
+          >
             Requests
             {pendingCount > 0 && (
               <span className="ml-2 inline-flex items-center justify-center rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white">
@@ -291,7 +368,10 @@ export default function AgentDashboard() {
               </span>
             )}
           </button>
-          <button onClick={() => setTab("history")} className={tabClass("history")}>
+          <button
+            onClick={() => setTab("history")}
+            className={tabClass("history")}
+          >
             History
           </button>
         </nav>
@@ -302,28 +382,79 @@ export default function AgentDashboard() {
           <TitleCard title="E-cash wallets">
             {wallets.length === 0 ? (
               <p className="text-gray-400">
-                No e-cash yet — ask a coordinator to send some using the form below.
+                No e-cash yet — ask a coordinator to send some using the form
+                below.
               </p>
             ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {wallets.map((wallet) => (
-                  <div key={wallet.id} className="rounded-lg bg-gray-900 p-4 shadow">
+                  <div
+                    key={wallet.id}
+                    className="rounded-lg bg-gray-900 p-4 shadow"
+                  >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-400">{wallet.provider.name}</span>
+                      <span className="text-xs text-gray-400">
+                        {wallet.provider.name}
+                      </span>
                       <WalletIcon className="h-6 w-6 text-blue-400" />
                     </div>
-                    <div className="mt-1 text-2xl font-bold text-gray-100">৳{wallet.balance}</div>
+                    <div className="mt-1 text-2xl font-bold text-gray-100">
+                      ৳{wallet.balance}
+                    </div>
                   </div>
                 ))}
               </div>
             )}
           </TitleCard>
 
+          <TitleCard title="E-cash balance breakdown">
+            {pieData.length === 0 ? (
+              <p className="text-gray-400">Nothing to chart yet.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={320}>
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={{ stroke: "#6b7280" }}
+                    label={renderPieLabel}
+                    outerRadius={110}
+                    dataKey="value"
+                    isAnimationActive={false}
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell
+                        key={entry.name}
+                        fill={PIE_COLORS[index % PIE_COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#1f2937",
+                      border: "1px solid #374151",
+                      borderRadius: "6px",
+                    }}
+                    labelStyle={{ color: "#f3f4f6" }}
+                    itemStyle={{ color: "#f3f4f6" }}
+                    formatter={(value: any) => `৳${value}`}
+                  />
+                  <Legend wrapperStyle={{ color: "#d1d5db" }} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </TitleCard>
+
           <TitleCard title="My provider applications">
             <p className="-mt-2 mb-3 text-sm text-gray-400">
-              Apply to a provider first. You can request and transact only with providers that approve you.
+              Apply to a provider first. You can request and transact only with
+              providers that approve you.
             </p>
-            <form onSubmit={applyToProvider} className="flex flex-col items-start gap-3 sm:flex-row">
+            <form
+              onSubmit={applyToProvider}
+              className="flex flex-col items-start gap-3 sm:flex-row"
+            >
               <select
                 value={selectedProvider}
                 onChange={(e) => setSelectedProvider(e.target.value)}
@@ -331,7 +462,9 @@ export default function AgentDashboard() {
               >
                 <option value="">Pick a provider</option>
                 {allProviders.map((provider) => (
-                  <option key={provider.id} value={provider.id}>{provider.name}</option>
+                  <option key={provider.id} value={provider.id}>
+                    {provider.name}
+                  </option>
                 ))}
               </select>
               <button
@@ -341,7 +474,9 @@ export default function AgentDashboard() {
                 Apply
               </button>
             </form>
-            {providerError && <p className="mt-2 text-sm text-red-400">{providerError}</p>}
+            {providerError && (
+              <p className="mt-2 text-sm text-red-400">{providerError}</p>
+            )}
             {providerApplications.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2">
                 {providerApplications.map((application) => (
@@ -350,7 +485,9 @@ export default function AgentDashboard() {
                     className="inline-flex items-center gap-2 rounded-full border border-gray-600 px-3 py-1 text-sm text-gray-300"
                   >
                     {application.provider.name}
-                    <span className="capitalize text-gray-500">({application.status})</span>
+                    <span className="capitalize text-gray-500">
+                      ({application.status})
+                    </span>
                   </span>
                 ))}
               </div>
@@ -363,13 +500,18 @@ export default function AgentDashboard() {
         <TitleCard title="Cash in / Cash out">
           <div>
             <p className="text-sm text-gray-400">
-              Cash-in moves money from e-cash into your drawer. Cash-out
-              moves it back the other way.
+              Cash-in moves money from e-cash into your drawer. Cash-out moves
+              it back the other way.
             </p>
 
-            <form onSubmit={handleMoveSubmit} className="mt-2 flex flex-col items-start gap-3 sm:flex-row">
+            <form
+              onSubmit={handleMoveSubmit}
+              className="mt-2 flex flex-col items-start gap-3 sm:flex-row"
+            >
               <div className="w-full sm:w-36">
-                <label className="mb-1 block text-sm font-medium text-gray-300">Type</label>
+                <label className="mb-1 block text-sm font-medium text-gray-300">
+                  Type
+                </label>
                 <select
                   name="type"
                   value={moveData.type}
@@ -382,7 +524,9 @@ export default function AgentDashboard() {
               </div>
 
               <div className="w-full sm:w-40">
-                <label className="mb-1 block text-sm font-medium text-gray-300">Provider</label>
+                <label className="mb-1 block text-sm font-medium text-gray-300">
+                  Provider
+                </label>
                 <select
                   name="providerId"
                   value={moveData.providerId}
@@ -399,7 +543,9 @@ export default function AgentDashboard() {
               </div>
 
               <div className="w-full sm:w-40">
-                <label className="mb-1 block text-sm font-medium text-gray-300">Amount</label>
+                <label className="mb-1 block text-sm font-medium text-gray-300">
+                  Amount
+                </label>
                 <input
                   type="number"
                   name="amount"
@@ -418,7 +564,9 @@ export default function AgentDashboard() {
               </button>
             </form>
 
-            {moveError && <p className="mt-1 text-sm text-red-400">{moveError}</p>}
+            {moveError && (
+              <p className="mt-1 text-sm text-red-400">{moveError}</p>
+            )}
           </div>
         </TitleCard>
       )}
@@ -431,9 +579,14 @@ export default function AgentDashboard() {
                 Choose whether you need e-cash or physical cash.
               </p>
 
-              <form onSubmit={handleSubmit} className="mt-2 flex flex-col items-start gap-3 sm:flex-row">
+              <form
+                onSubmit={handleSubmit}
+                className="mt-2 flex flex-col items-start gap-3 sm:flex-row"
+              >
                 <div className="w-full sm:w-40">
-                  <label className="mb-1 block text-sm font-medium text-gray-300">I need</label>
+                  <label className="mb-1 block text-sm font-medium text-gray-300">
+                    I need
+                  </label>
                   <select
                     name="type"
                     value={formData.type}
@@ -446,7 +599,9 @@ export default function AgentDashboard() {
                 </div>
 
                 <div className="w-full sm:w-40">
-                  <label className="mb-1 block text-sm font-medium text-gray-300">Provider</label>
+                  <label className="mb-1 block text-sm font-medium text-gray-300">
+                    Provider
+                  </label>
                   <select
                     name="providerId"
                     value={formData.providerId}
@@ -463,7 +618,9 @@ export default function AgentDashboard() {
                 </div>
 
                 <div className="w-full sm:w-40">
-                  <label className="mb-1 block text-sm font-medium text-gray-300">Amount</label>
+                  <label className="mb-1 block text-sm font-medium text-gray-300">
+                    Amount
+                  </label>
                   <input
                     type="number"
                     name="amount"
@@ -494,22 +651,43 @@ export default function AgentDashboard() {
                 <table className="w-full text-left text-sm">
                   <thead>
                     <tr>
-                      <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Provider</th>
-                      <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Amount</th>
-                      <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Type</th>
-                      <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Status</th>
+                      <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">
+                        Provider
+                      </th>
+                      <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">
+                        Amount
+                      </th>
+                      <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">
+                        Type
+                      </th>
+                      <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">
+                        Status
+                      </th>
                       <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400"></th>
-                      <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Requested</th>
-                      <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Fulfilled</th>
+                      <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">
+                        Requested
+                      </th>
+                      <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">
+                        Fulfilled
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {requests.map((req) => (
-                      <tr key={req.id} className="odd:bg-gray-800 even:bg-gray-900/40">
-                        <td className="border-b border-gray-700 px-4 py-2">{req.provider.name}</td>
-                        <td className="border-b border-gray-700 px-4 py-2">৳{req.amount}</td>
+                      <tr
+                        key={req.id}
+                        className="odd:bg-gray-800 even:bg-gray-900/40"
+                      >
                         <td className="border-b border-gray-700 px-4 py-2">
-                          {req.type === "physical_cash" ? "Physical cash" : "E-cash"}
+                          {req.provider.name}
+                        </td>
+                        <td className="border-b border-gray-700 px-4 py-2">
+                          ৳{req.amount}
+                        </td>
+                        <td className="border-b border-gray-700 px-4 py-2">
+                          {req.type === "physical_cash"
+                            ? "Physical cash"
+                            : "E-cash"}
                         </td>
                         <td className="border-b border-gray-700 px-4 py-2">
                           <span
@@ -532,7 +710,9 @@ export default function AgentDashboard() {
                           {new Date(req.requestedAt).toLocaleString()}
                         </td>
                         <td className="border-b border-gray-700 px-4 py-2">
-                          {req.fulfilledAt ? new Date(req.fulfilledAt).toLocaleString() : "—"}
+                          {req.fulfilledAt
+                            ? new Date(req.fulfilledAt).toLocaleString()
+                            : "—"}
                         </td>
                       </tr>
                     ))}
@@ -545,51 +725,120 @@ export default function AgentDashboard() {
       )}
 
       {tab === "history" && (
-        <TitleCard title="Transaction history">
-          {transactions.length === 0 ? (
-            <p className="text-gray-400">No cash-in/cash-out yet.</p>
-          ) : (
-            <div className="overflow-x-auto rounded-lg border border-gray-700 bg-gray-800">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr>
-                    <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Date</th>
-                    <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Type</th>
-                    <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Provider</th>
-                    <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Amount</th>
-                    <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Drawer after</th>
-                    <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">Wallet after</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...transactions].reverse().map((tx) => (
-                    <tr key={tx.id} className="odd:bg-gray-800 even:bg-gray-900/40">
-                      <td className="border-b border-gray-700 px-4 py-2">
-                        {new Date(tx.createdAt).toLocaleString()}
-                      </td>
-                      <td className="border-b border-gray-700 px-4 py-2">
-                        <span
-                          className={
-                            "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize " +
-                            (tx.type === "cash_in"
-                              ? "bg-green-900/40 text-green-300"
-                              : "bg-amber-900/40 text-amber-300")
-                          }
-                        >
-                          {tx.type === "cash_in" ? "Cash in" : "Cash out"}
-                        </span>
-                      </td>
-                      <td className="border-b border-gray-700 px-4 py-2">{tx.provider.name}</td>
-                      <td className="border-b border-gray-700 px-4 py-2">৳{tx.amount}</td>
-                      <td className="border-b border-gray-700 px-4 py-2">৳{tx.drawerBalanceAfter}</td>
-                      <td className="border-b border-gray-700 px-4 py-2">৳{tx.walletBalanceAfter}</td>
+        <div className="flex flex-col gap-8">
+          <TitleCard title="Balance over time">
+            {historyChartData.length === 0 ? (
+              <p className="text-gray-400">No cash-in/cash-out yet.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={historyChartData}>
+                  <CartesianGrid stroke="#374151" strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fill: "#9ca3af", fontSize: 12 }}
+                  />
+                  <YAxis tick={{ fill: "#9ca3af", fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#1f2937",
+                      border: "1px solid #374151",
+                      borderRadius: "6px",
+                    }}
+                    labelStyle={{ color: "#f3f4f6" }}
+                    itemStyle={{ color: "#f3f4f6" }}
+                    formatter={(value: any) => `৳${value}`}
+                  />
+                  <Legend wrapperStyle={{ color: "#d1d5db" }} />
+                  <Line
+                    type="monotone"
+                    dataKey="drawer"
+                    name="Cash drawer"
+                    stroke="#60a5fa"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="wallet"
+                    name="E-cash wallet"
+                    stroke="#4ade80"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </TitleCard>
+
+          <TitleCard title="Transaction history">
+            {transactions.length === 0 ? (
+              <p className="text-gray-400">No cash-in/cash-out yet.</p>
+            ) : (
+              <div className="overflow-x-auto rounded-lg border border-gray-700 bg-gray-800">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr>
+                      <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">
+                        Date
+                      </th>
+                      <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">
+                        Type
+                      </th>
+                      <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">
+                        Provider
+                      </th>
+                      <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">
+                        Amount
+                      </th>
+                      <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">
+                        Drawer after
+                      </th>
+                      <th className="border-b border-gray-700 px-4 py-2 font-medium text-gray-400">
+                        Wallet after
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </TitleCard>
+                  </thead>
+                  <tbody>
+                    {[...transactions].reverse().map((tx) => (
+                      <tr
+                        key={tx.id}
+                        className="odd:bg-gray-800 even:bg-gray-900/40"
+                      >
+                        <td className="border-b border-gray-700 px-4 py-2">
+                          {new Date(tx.createdAt).toLocaleString()}
+                        </td>
+                        <td className="border-b border-gray-700 px-4 py-2">
+                          <span
+                            className={
+                              "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize " +
+                              (tx.type === "cash_in"
+                                ? "bg-green-900/40 text-green-300"
+                                : "bg-amber-900/40 text-amber-300")
+                            }
+                          >
+                            {tx.type === "cash_in" ? "Cash in" : "Cash out"}
+                          </span>
+                        </td>
+                        <td className="border-b border-gray-700 px-4 py-2">
+                          {tx.provider.name}
+                        </td>
+                        <td className="border-b border-gray-700 px-4 py-2">
+                          ৳{tx.amount}
+                        </td>
+                        <td className="border-b border-gray-700 px-4 py-2">
+                          ৳{tx.drawerBalanceAfter}
+                        </td>
+                        <td className="border-b border-gray-700 px-4 py-2">
+                          ৳{tx.walletBalanceAfter}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </TitleCard>
+        </div>
       )}
     </div>
   );

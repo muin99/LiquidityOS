@@ -4,7 +4,40 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import InboxArrowDownIcon from "@heroicons/react/24/outline/InboxArrowDownIcon";
 import BuildingOfficeIcon from "@heroicons/react/24/outline/BuildingOfficeIcon";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 import TitleCard from "@/components/title-card";
+
+// One color per pie slice. If there are more wallets than colors, it
+// just loops back around to the start.
+const PIE_COLORS = ["#60a5fa", "#4ade80", "#fbbf24", "#f472b6", "#c084fc", "#22d3ee"];
+
+// Recharts draws its default slice labels in dark gray, which is
+// invisible on our dark cards — so we draw the label text ourselves
+// in a light color instead.
+function renderPieLabel(props: any) {
+  const RADIAN = Math.PI / 180;
+  const { cx, cy, midAngle, outerRadius, percent, name } = props;
+  const radius = outerRadius + 22;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  return (
+    <text x={x} y={y} fill="#e5e7eb" fontSize={12} textAnchor={x > cx ? "start" : "end"} dominantBaseline="central">
+      {`${name} ${(percent * 100).toFixed(0)}%`}
+    </text>
+  );
+}
 
 export default function CoordinatorDashboard() {
   const [loading, setLoading] = useState(true);
@@ -157,6 +190,22 @@ export default function CoordinatorDashboard() {
     return `${base} border-transparent text-gray-400 hover:border-gray-600 hover:text-gray-200`;
   }
 
+  // Turn cash + e-cash wallets into the {name, value} shape the pie chart wants.
+  const liquidityPieData = [
+    { name: "Physical cash", value: Number(balances.cash) },
+    ...balances.ecashWallets.map((wallet) => ({
+      name: wallet.provider.name,
+      value: Number(wallet.balance),
+    })),
+  ].filter((entry) => entry.value > 0);
+
+  // Turn the funding/fulfillment log into {date, amount} points, oldest
+  // first, for the bar chart.
+  const historyChartData = [...transactions].reverse().map((t) => ({
+    date: new Date(t.createdAt).toLocaleDateString(),
+    amount: Number(t.amount),
+  }));
+
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-1 gap-px overflow-hidden rounded-lg bg-gray-700 shadow sm:grid-cols-3">
@@ -220,6 +269,38 @@ export default function CoordinatorDashboard() {
                 </div>
               ))}
             </div>
+          </TitleCard>
+
+          <TitleCard title="Liquidity breakdown">
+            {liquidityPieData.length === 0 ? (
+              <p className="text-gray-400">Nothing to chart yet.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={320}>
+                <PieChart>
+                  <Pie
+                    data={liquidityPieData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={{ stroke: "#6b7280" }}
+                    label={renderPieLabel}
+                    outerRadius={110}
+                    dataKey="value"
+                    isAnimationActive={false}
+                  >
+                    {liquidityPieData.map((entry, index) => (
+                      <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151", borderRadius: "6px" }}
+                    labelStyle={{ color: "#f3f4f6" }}
+                    itemStyle={{ color: "#f3f4f6" }}
+                    formatter={(value: any) => `৳${value}`}
+                  />
+                  <Legend wrapperStyle={{ color: "#d1d5db" }} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </TitleCard>
 
           <TitleCard title="Request liquidity from a provider">
@@ -444,6 +525,28 @@ export default function CoordinatorDashboard() {
       )}
 
       {tab === "history" && (
+        <div className="flex flex-col gap-8">
+          <TitleCard title="Funding activity">
+            {historyChartData.length === 0 ? (
+              <p className="text-gray-400">No supply or fulfillment activity yet.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={historyChartData}>
+                  <CartesianGrid stroke="#374151" strokeDasharray="3 3" />
+                  <XAxis dataKey="date" tick={{ fill: "#9ca3af", fontSize: 12 }} />
+                  <YAxis tick={{ fill: "#9ca3af", fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151", borderRadius: "6px" }}
+                    labelStyle={{ color: "#f3f4f6" }}
+                    itemStyle={{ color: "#f3f4f6" }}
+                    formatter={(value: any) => `৳${value}`}
+                  />
+                  <Bar dataKey="amount" name="Amount" fill="#60a5fa" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </TitleCard>
+
         <TitleCard title="My funding and fulfillment history">
           {transactions.length === 0 ? (
             <p className="text-gray-400">No supply or fulfillment activity yet.</p>
@@ -477,7 +580,8 @@ export default function CoordinatorDashboard() {
               </table>
             </div>
           )}
-        </TitleCard>
+          </TitleCard>
+        </div>
       )}
     </div>
   );

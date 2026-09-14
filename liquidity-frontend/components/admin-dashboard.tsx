@@ -6,6 +6,7 @@ import UsersIcon from "@heroicons/react/24/outline/UsersIcon";
 import BuildingOfficeIcon from "@heroicons/react/24/outline/BuildingOfficeIcon";
 import MapPinIcon from "@heroicons/react/24/outline/MapPinIcon";
 import WalletIcon from "@heroicons/react/24/outline/WalletIcon";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import TitleCard from "@/components/title-card";
 
 export default function AdminDashboard() {
@@ -193,6 +194,39 @@ export default function AdminDashboard() {
 
   const pendingCount = pendingUsers.length + pendingApplications.length;
 
+  // Count how many people have each role, for the bar chart.
+  const roleCounts: any = {};
+  for (const user of users) {
+    roleCounts[user.role] = (roleCounts[user.role] || 0) + 1;
+  }
+  const roleChartData = Object.keys(roleCounts).map((role) => ({
+    role: role.charAt(0).toUpperCase() + role.slice(1),
+    count: roleCounts[role],
+  }));
+
+  // Count how many people are in each area, for the heatmap.
+  const areaCounts: any = {};
+  for (const user of users) {
+    if (!user.area) continue;
+    areaCounts[user.area.name] = (areaCounts[user.area.name] || 0) + 1;
+  }
+  const areaChartData = Object.keys(areaCounts).map((name) => ({
+    name,
+    count: areaCounts[name],
+  }));
+  let maxAreaCount = 0;
+  for (const area of areaChartData) {
+    if (area.count > maxAreaCount) maxAreaCount = area.count;
+  }
+
+  // Darker blue means more people in that area. A basic heatmap,
+  // just plain colored boxes, no chart library needed for this one.
+  function heatColor(count: number) {
+    const ratio = maxAreaCount === 0 ? 0 : count / maxAreaCount;
+    const alpha = 0.15 + ratio * 0.65;
+    return `rgba(59, 130, 246, ${alpha})`;
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-1 gap-px overflow-hidden rounded-lg bg-gray-700 shadow sm:grid-cols-2 lg:grid-cols-4">
@@ -347,6 +381,49 @@ export default function AdminDashboard() {
       )}
 
       {tab === "people" && (
+        <div className="flex flex-col gap-8">
+          <TitleCard title="People by role">
+            {roleChartData.length === 0 ? (
+              <p className="text-gray-400">No people yet.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={roleChartData}>
+                  <CartesianGrid stroke="#374151" strokeDasharray="3 3" />
+                  <XAxis dataKey="role" tick={{ fill: "#9ca3af", fontSize: 12 }} />
+                  <YAxis allowDecimals={false} tick={{ fill: "#9ca3af", fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151", borderRadius: "6px" }}
+                    labelStyle={{ color: "#f3f4f6" }}
+                    itemStyle={{ color: "#f3f4f6" }}
+                  />
+                  <Bar dataKey="count" name="People" fill="#60a5fa" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </TitleCard>
+
+          <TitleCard title="People by area">
+            <p className="-mt-2 mb-3 text-sm text-gray-400">
+              Darker box means more agents and coordinators in that area.
+            </p>
+            {areaChartData.length === 0 ? (
+              <p className="text-gray-400">No area data yet.</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {areaChartData.map((area) => (
+                  <div
+                    key={area.name}
+                    style={{ backgroundColor: heatColor(area.count) }}
+                    className="rounded-lg border border-gray-700 p-4 text-center"
+                  >
+                    <div className="text-sm text-gray-100">{area.name}</div>
+                    <div className="text-2xl font-bold text-white">{area.count}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TitleCard>
+
         <TitleCard title="All people">
           <p className="-mt-2 mb-3 text-sm text-gray-400">
             Agents, coordinators, providers, and admins in one place.
@@ -425,7 +502,8 @@ export default function AdminDashboard() {
               </tbody>
             </table>
           </div>
-        </TitleCard>
+          </TitleCard>
+        </div>
       )}
 
       {tab === "setup" && (
